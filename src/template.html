@@ -193,6 +193,54 @@ body.nav-open .ref .cv{transform:rotate(180deg)}
 #prefs #flist{max-height:300px;overflow-y:auto}
 #prefs .heads{margin-top:6px}
 #prefs .heads .ln{display:block;height:3px;border-radius:2px;background:var(--faint);opacity:.6}
+/* one verse at a time */
+.col.onev{max-width:var(--mw,44rem)}
+.one{min-height:calc(100vh - 190px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px 0 30px;cursor:default}
+.one .note{margin-bottom:22px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.one .note i{width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block}
+.one .ov{font-size:calc(var(--fs) * 1.5);line-height:1.5;max-width:30em;animation:oin .35s ease both}
+.one .ov .t{border-radius:6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.one .ov.c-y .t{background:var(--hy)} .one .ov.c-g .t{background:var(--hg)} .one .ov.c-b .t{background:var(--hb)} .one .ov.c-p .t{background:var(--hp)} .one .ov.c-v .t{background:var(--hv)}
+.one .ottl{display:block;font-size:.55em;font-style:italic;color:var(--muted);margin-bottom:.9em}
+.one .ocap{margin-top:34px;border:0;background:none;padding:6px 12px;border-radius:980px;font:600 12px -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+.one .ocap:hover{background:var(--hover);color:var(--ink)}
+.one .ond{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.one .obar{width:160px;height:3px;border-radius:2px;background:var(--hover);margin-top:16px;overflow:hidden}
+.one .obar i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.one .ocnt{margin-top:8px;font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:var(--faint);font-variant-numeric:tabular-nums}
+.one .next{margin:22px 0 0;justify-content:center}
+.one .empty{padding:0}
+@keyframes oin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* verse shuffle (full screen, like Stobite TV) */
+:root{--shbg:#f4f1ea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--shbg:#0b0c0f}}
+:root[data-theme="dark"]{--shbg:#0b0c0f}
+#shuf{position:fixed;inset:0;z-index:95;background:var(--shbg);color:var(--ink);display:none;align-items:center;justify-content:center;padding:calc(48px + env(safe-area-inset-top)) 7vw calc(100px + env(safe-area-inset-bottom));cursor:pointer;user-select:none;-webkit-user-select:none}
+#shuf.open{display:flex}
+#shuf.idle{cursor:none} #shuf.idle .sctl{opacity:0;pointer-events:none}
+body.shuf-open{overflow:hidden}
+#shuf .sfig{margin:0;max-width:1150px;text-align:center}
+#shuf .sfig.in{animation:sfade 1.2s ease both}
+@keyframes sfade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+#shq{margin:0;font-family:var(--bf,ui-serif,"New York","Iowan Old Style",Georgia,serif);font-size:clamp(26px,4.4vw,62px);line-height:1.4;letter-spacing:-.005em}
+#shq i{font-style:italic}
+#shr{margin-top:clamp(22px,3vw,44px);font:600 clamp(12px,1.5vw,22px)/1.2 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+#shuf .sbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--hover)}
+#shuf .sbar i{display:block;height:100%;width:0;background:var(--faint)}
+#shuf .sbar i.run{animation:sfill linear forwards}
+@keyframes sfill{to{width:100%}}
+#shuf .sctl{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:var(--card);border:.5px solid var(--line);border-radius:980px;padding:5px;box-shadow:var(--shadow);transition:opacity .35s;font-family:-apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap;cursor:default}
+#shuf .sctl button{border:0;background:none;color:var(--ink);border-radius:980px;height:36px;min-width:36px;padding:0 11px;font-size:13px;font-weight:500;display:grid;place-items:center}
+#shuf .sctl button:hover{background:var(--hover)}
+#shuf .sctl svg{width:17px;height:17px}
+#shuf .sctl .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+#randp .shufgo{display:block;width:100%;margin-top:12px;border:.5px solid var(--line);background:none;border-radius:10px;padding:10px;font-size:13.5px;font-weight:500;color:var(--accent);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#randp .shufgo:hover{background:var(--hover)}
+@media (max-width:700px){
+  .one{min-height:calc(100vh - 160px)}
+  .one .ov{font-size:calc(min(var(--fs),19px) * 1.3)}
+  #shuf .sctl button{padding:0 9px}
+}
 #verp{position:fixed;z-index:55;width:300px;max-width:calc(100vw - 24px);background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:8px;display:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #verp.open{display:block;animation:pin .14s ease-out}
 #verp .vr{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;padding:9px 10px;border-radius:9px}
@@ -477,6 +525,7 @@ main{display:grid;grid-template-rows:auto 1fr}
 </div>
 <div id="menup" class="sheet" role="dialog" aria-label="Menu"></div>
 <div id="planp" class="sheet" role="dialog" aria-label="Reading plan"></div>
+<div id="shuf" role="dialog" aria-label="Verse shuffle"><figure class="sfig"><blockquote id="shq"></blockquote><figcaption id="shr"></figcaption></figure><div class="sctl" id="shctl"></div><div class="sbar"><i id="shi"></i></div></div>
 <input id="xmlfile" type="file" accept=".xml,.osis,.usfx,.zef,text/xml,application/xml" hidden>
 <div id="scrim"></div>
 <div id="modal"><div class="box">

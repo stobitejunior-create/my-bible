@@ -193,6 +193,54 @@ body.nav-open .ref .cv{transform:rotate(180deg)}
 #prefs #flist{max-height:300px;overflow-y:auto}
 #prefs .heads{margin-top:6px}
 #prefs .heads .ln{display:block;height:3px;border-radius:2px;background:var(--faint);opacity:.6}
+/* one verse at a time */
+.col.onev{max-width:var(--mw,44rem)}
+.one{min-height:calc(100vh - 190px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px 0 30px;cursor:default}
+.one .note{margin-bottom:22px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.one .note i{width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block}
+.one .ov{font-size:calc(var(--fs) * 1.5);line-height:1.5;max-width:30em;animation:oin .35s ease both}
+.one .ov .t{border-radius:6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.one .ov.c-y .t{background:var(--hy)} .one .ov.c-g .t{background:var(--hg)} .one .ov.c-b .t{background:var(--hb)} .one .ov.c-p .t{background:var(--hp)} .one .ov.c-v .t{background:var(--hv)}
+.one .ottl{display:block;font-size:.55em;font-style:italic;color:var(--muted);margin-bottom:.9em}
+.one .ocap{margin-top:34px;border:0;background:none;padding:6px 12px;border-radius:980px;font:600 12px -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+.one .ocap:hover{background:var(--hover);color:var(--ink)}
+.one .ond{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.one .obar{width:160px;height:3px;border-radius:2px;background:var(--hover);margin-top:16px;overflow:hidden}
+.one .obar i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.one .ocnt{margin-top:8px;font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:var(--faint);font-variant-numeric:tabular-nums}
+.one .next{margin:22px 0 0;justify-content:center}
+.one .empty{padding:0}
+@keyframes oin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* verse shuffle (full screen, like Stobite TV) */
+:root{--shbg:#f4f1ea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--shbg:#0b0c0f}}
+:root[data-theme="dark"]{--shbg:#0b0c0f}
+#shuf{position:fixed;inset:0;z-index:95;background:var(--shbg);color:var(--ink);display:none;align-items:center;justify-content:center;padding:calc(48px + env(safe-area-inset-top)) 7vw calc(100px + env(safe-area-inset-bottom));cursor:pointer;user-select:none;-webkit-user-select:none}
+#shuf.open{display:flex}
+#shuf.idle{cursor:none} #shuf.idle .sctl{opacity:0;pointer-events:none}
+body.shuf-open{overflow:hidden}
+#shuf .sfig{margin:0;max-width:1150px;text-align:center}
+#shuf .sfig.in{animation:sfade 1.2s ease both}
+@keyframes sfade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+#shq{margin:0;font-family:var(--bf,ui-serif,"New York","Iowan Old Style",Georgia,serif);font-size:clamp(26px,4.4vw,62px);line-height:1.4;letter-spacing:-.005em}
+#shq i{font-style:italic}
+#shr{margin-top:clamp(22px,3vw,44px);font:600 clamp(12px,1.5vw,22px)/1.2 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+#shuf .sbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--hover)}
+#shuf .sbar i{display:block;height:100%;width:0;background:var(--faint)}
+#shuf .sbar i.run{animation:sfill linear forwards}
+@keyframes sfill{to{width:100%}}
+#shuf .sctl{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:var(--card);border:.5px solid var(--line);border-radius:980px;padding:5px;box-shadow:var(--shadow);transition:opacity .35s;font-family:-apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap;cursor:default}
+#shuf .sctl button{border:0;background:none;color:var(--ink);border-radius:980px;height:36px;min-width:36px;padding:0 11px;font-size:13px;font-weight:500;display:grid;place-items:center}
+#shuf .sctl button:hover{background:var(--hover)}
+#shuf .sctl svg{width:17px;height:17px}
+#shuf .sctl .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+#randp .shufgo{display:block;width:100%;margin-top:12px;border:.5px solid var(--line);background:none;border-radius:10px;padding:10px;font-size:13.5px;font-weight:500;color:var(--accent);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#randp .shufgo:hover{background:var(--hover)}
+@media (max-width:700px){
+  .one{min-height:calc(100vh - 160px)}
+  .one .ov{font-size:calc(min(var(--fs),19px) * 1.3)}
+  #shuf .sctl button{padding:0 9px}
+}
 #verp{position:fixed;z-index:55;width:300px;max-width:calc(100vw - 24px);background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:8px;display:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #verp.open{display:block;animation:pin .14s ease-out}
 #verp .vr{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;padding:9px 10px;border-radius:9px}
@@ -488,6 +536,7 @@ main{display:grid;grid-template-rows:auto 1fr}
 </div>
 <div id="menup" class="sheet" role="dialog" aria-label="Menu"></div>
 <div id="planp" class="sheet" role="dialog" aria-label="Reading plan"></div>
+<div id="shuf" role="dialog" aria-label="Verse shuffle"><figure class="sfig"><blockquote id="shq"></blockquote><figcaption id="shr"></figcaption></figure><div class="sctl" id="shctl"></div><div class="sbar"><i id="shi"></i></div></div>
 <input id="xmlfile" type="file" accept=".xml,.osis,.usfx,.zef,text/xml,application/xml" hidden>
 <div id="scrim"></div>
 <div id="modal"><div class="box">
@@ -926,6 +975,7 @@ function draw(flashV){
   const bk=DATA[S.v][S.b]; if(S.c>=bk.length) S.c=bk.length-1;
   const ch=bk[S.c]||[]; const o=opts(), G=o.god;
   $('#reft').textContent=`${NAMES[S.b]} ${S.c+1}`; document.title=`${NAMES[S.b]} ${S.c+1} · ${VN[S.v]}`;
+  if(oneMode()) return drawOne(ch,o,G,flashV);
   const twin=S.par&&S.v2!==S.v, hs=twin&&S.hs==='dropcap'?'line':S.hs, drop=hs==='dropcap'; let first=true;
   let h=`<header class="hd h-${hs}">${headHTML(hs,S.b,S.c+1,S.v)}`;
   if(G) h+=`<div class="note"><i></i>Showing only words spoken by God</div>`;
@@ -959,9 +1009,40 @@ function draw(flashV){
   if(nx) h+=`<button class="pill pri" data-go="${nx}">${NAMES[nx[0]]} ${nx[1]+1} ›</button>`;
   h+=planBtn();
   h+='</div>';
-  $('#col').innerHTML=h; $('#col').classList.toggle('wide',!!par); $('#col').classList.toggle('flow',flow); buildBooks(); syncControls(); save();
+  $('#col').innerHTML=h; $('#col').classList.toggle('wide',!!par); $('#col').classList.toggle('flow',flow); $('#col').classList.remove('onev'); buildBooks(); syncControls(); save();
   if(flashV){const el=document.getElementById('v'+flashV); if(el){el.scrollIntoView({block:'center'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1400);}}
   else $('#scroll').scrollTop=0;
+}
+// ---------- One verse at a time (Settings → Layout → One verse) ----------
+// The chapter is shown a verse at a time, large and centred. ← → / the edge arrows / swipe / tapping the left or
+// right of the verse step through it and carry on into the next chapter. Tap the reference for the verse panel.
+let ONE=S.ov||1, ONEKEY=S.ovk||'';
+const oneMode=()=>S.layout==='one'&&!searchMode&&!(S.par&&S.v2!==S.v);
+const oneList=(ch,G)=>{ const L=[]; ch.forEach((x,i)=>{ if(x&&(!G||/[{«]/.test(x))) L.push(i+1); }); return L; };
+function drawOne(ch,o,G,flashV){
+  const key=S.b+'.'+S.c, L=oneList(ch,G);
+  if(flashV) ONE=flashV; else if(ONEKEY!==key) ONE=L[0]||1;
+  if(L.length&&!L.includes(ONE)) ONE=L.find(x=>x>=ONE)||L[L.length-1];
+  ONEKEY=key; S.ov=ONE; S.ovk=key;
+  let h;
+  if(!L.length) h=`<div class="one"><p class="empty">${G?'No words spoken directly by God are recorded in this chapter.':'This chapter has no verses in this version.'}</p></div>`;
+  else {
+    const r=render(ch[ONE-1],o), mk=MARKS[mkey(S.b,S.c+1,ONE)], p=L.indexOf(ONE);
+    h=`<div class="one" id="one">${G?'<div class="note"><i></i>Showing only words spoken by God</div>':''}
+      <div class="ov${mk&&mk.color?' c-'+mk.color:''}" id="v${ONE}" data-n="${ONE}">${r.title&&!G?`<span class="ottl">${r.title}</span>`:''}<span class="t">${r.html}</span></div>
+      <button class="ocap" data-opanel title="Highlight, note, copy, cross references">${NAMES[S.b]} ${S.c+1}:${ONE}${mk&&mk.note?'<i class="ond"></i>':''}</button>
+      <div class="obar"><i style="width:${Math.round(100*(p+1)/L.length)}%"></i></div>
+      <div class="ocnt">${p+1} of ${L.length}</div>
+      ${p===L.length-1&&planBtn()?`<div class="next">${planBtn()}</div>`:''}
+    </div>`;
+  }
+  $('#col').innerHTML=h; $('#col').classList.remove('wide','flow'); $('#col').classList.add('onev'); buildBooks(); syncControls(); save(); $('#scroll').scrollTop=0;
+}
+function stepVerse(d){
+  const G=godOn(), wasOpen=$('#bodyg').classList.contains('withpanel'), L=oneList(DATA[S.v][S.b][S.c]||[],G), p=L.indexOf(ONE);
+  if(p+d>=0&&p+d<L.length) ONE=L[p+d];
+  else { const nc=nextCh(d); if(!nc) return; S.b=nc[0]; S.c=nc[1]; const L2=oneList(DATA[S.v][S.b][S.c]||[],G); ONE=d>0?(L2[0]||1):(L2[L2.length-1]||1); ONEKEY=S.b+'.'+S.c; }
+  SELV=0; draw(ONE); if(wasOpen) openPanel(ONE);
 }
 // In God's-words mode, chapter arrows skip chapters with no divine speech
 function nextCh(d){
@@ -978,13 +1059,15 @@ function go(b,c,v){S.b=b;S.c=c;openBook=b;closePop();SELV=v||0;draw(v); if(v&&$(
 $('#col').addEventListener('click',e=>{
   const p=e.target.closest('[data-go]'); if(p){const [b,c]=p.dataset.go.split(',').map(Number); go(b,c); return;}
   const w=e.target.closest('.w'); if(w&&!String(getSelection())){e.stopPropagation(); showPop(w.dataset.s.split(' '),w); return;}
+  const one=e.target.closest('#one');
+  if(one&&!searchMode){ if(String(getSelection())) return; if(e.target.closest('[data-opanel]')) return openPanel(ONE); if(e.target.closest('button,a')) return; stepVerse(e.clientX-one.getBoundingClientRect().left<one.offsetWidth/3?-1:1); return; }
   const s2=e.target.closest('[data-v2]'); if(s2){ const v=s2.dataset.v2; load(v).then(()=>{S.v2=v; draw(firstVisibleVerse()||0);}); return; }
   const fb=e.target.closest('[data-fc]'); if(fb){ showMarks(fb.dataset.fc); return; }
   const r=e.target.closest('.res'); if(r){go(+r.dataset.b,+r.dataset.c,+r.dataset.v+1); return;}
   const v=e.target.closest('.v'); if(v&&!searchMode){ if(String(getSelection())) return; openPanel(+v.dataset.n); }
 });
-$('#prev').onclick=()=>{const p=nextCh(-1); p&&go(p[0],p[1]);};
-$('#next').onclick=()=>{const p=nextCh(1); p&&go(p[0],p[1]);};
+$('#prev').onclick=()=>{ if(oneMode()) return stepVerse(-1); const p=nextCh(-1); p&&go(p[0],p[1]); };
+$('#next').onclick=()=>{ if(oneMode()) return stepVerse(1); const p=nextCh(1); p&&go(p[0],p[1]); };
 $('#ver').onclick=async e=>{
   const b=e.target.closest('button'); if(!b||b.dataset.v===S.v) return;
   const v=b.dataset.v; document.body.style.cursor='progress'; await load(v); document.body.style.cursor='';
@@ -1145,6 +1228,7 @@ const ICON={
   search:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4" stroke-linecap="round"/></svg>',
   marks:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5.5 3h9v14l-4.5-3.2L5.5 17z"/></svg>',
   imp:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v9m-3.5-3.5L10 12l3.5-3.5M4 14v2.5h12V14"/></svg>',
+  shuf:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h3.5c2.5 0 3.5 1.5 4.5 4s2 4 4.5 4H17M3 14h3.5c1.2 0 2-.4 2.7-1.1M17 6h-1.5c-1.2 0-2 .4-2.7 1.1M15 4l2 2-2 2M15 12l2 2-2 2"/></svg>',
   plan:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="14" height="12.5" rx="2.5"/><path d="M3 8.5h14M7 3v3M13 3v3M7.5 12.5l1.7 1.7 3.3-3.4"/></svg>',
   info:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6.2v.1" stroke-linecap="round"/></svg>'};
 function renderMenu(mode){
@@ -1161,6 +1245,7 @@ function renderMenu(mode){
   }
   const pl=planMenuLabel();
   m.innerHTML=`<button class="mi" data-m="plan">${ICON.plan}Reading plan${pl?`<small>${esc(pl)}</small>`:''}</button>
+    <button class="mi" data-m="shuffle">${ICON.shuf}Verse shuffle</button>
     <button class="mi" data-m="search">${ICON.search}Search<small>⌘K</small></button>
     <button class="mi" data-m="marks">${ICON.marks}Highlights and notes</button>
     <button class="mi" data-m="import">${ICON.imp}Import a Bible (XML)…</button>
@@ -1173,6 +1258,7 @@ $('#menup').onclick=e=>{
   const b=e.target.closest('button'); if(!b) return;
   const k=b.dataset.m;
   if(k==='plan'){ openPlan(); }
+  else if(k==='shuffle'){ shufOpen(); }
   else if(k==='search'){ closeSheets(); openNav(true); }
   else if(k==='marks'){ closeSheets(); showMarks('all'); }
   else if(k==='import'){ $('#xmlfile').click(); }
@@ -1254,7 +1340,7 @@ function renderPrefs(){
     </div>
     <div class="sg">Page</div>
     <div class="sbox">
-      <div class="srow"><span>Layout</span>${seg('layout',S.layout,[['verse','Verses'],['para','Paragraph']])}</div>
+      <div class="srow"><span>Layout</span>${seg('layout',S.layout,[['verse','Verses'],['para','Paragraph'],['one','One verse']])}</div>
       <button class="srow nav" data-page="heading"><span>Chapter heading</span><span class="sv">${(HEADS.find(h=>h[0]===S.hs)||HEADS[0])[1]}${CHEV_R}</span></button>
       <div class="srow"><span>Appearance</span>${seg('theme',S.theme,[['auto','Auto'],['light','Light'],['dark','Dark']])}</div>
     </div>`;
@@ -1266,7 +1352,7 @@ $('#prefs').onclick=async e=>{
   const keep=()=>{ const fl=$('#flist'), fs=fl?fl.scrollTop:0, top=$('#prefs').scrollTop; renderPrefs(); if($('#flist')) $('#flist').scrollTop=fs; $('#prefs').scrollTop=top; };
   if(b.dataset.page){ PREFPAGE=b.dataset.page; renderPrefs(); $('#prefs').scrollTop=0; return; }
   if(b.dataset.theme){ S.theme=b.dataset.theme; }
-  if(b.dataset.layout){ S.layout=b.dataset.layout; save(); if(!searchMode) draw(firstVisibleVerse()>1?firstVisibleVerse():0); }
+  if(b.dataset.layout){ const fv=oneMode()?ONE:firstVisibleVerse(); S.layout=b.dataset.layout; if(S.layout==='one'){ ONE=fv||1; ONEKEY=S.b+'.'+S.c; } save(); if(!searchMode) draw(S.layout==='one'?ONE:(fv>1?fv:0)); }
   if(b.dataset.tg){ $('#'+b.dataset.tg).click(); setTimeout(keep,50); return; }
   if(b.dataset.hs){ S.hs=b.dataset.hs; save(); if(!searchMode) draw(firstVisibleVerse()>1?firstVisibleVerse():0); }
   if(b.dataset.font) S.font=b.dataset.font;
@@ -1335,7 +1421,8 @@ function renderRand(){
       <div class="acts"><button class="pill pri" data-again>Pick again</button></div>`;
   }
   const hist=READ.hist.filter(h=>h.k===(bible?'b':'m')).slice(-8).reverse();
-  $('#randp').innerHTML=`<div class="seg"><button data-tab="bible" class="${bible?'on':''}">Bible</button><button data-tab="mk" class="${bible?'':'on'}">Dag Heward-Mills</button></div>${card}
+  const shufBtn=`<button class="shufgo" data-shuf>▶ Verse shuffle, full screen</button>`;
+  $('#randp').innerHTML=`<div class="seg"><button data-tab="bible" class="${bible?'on':''}">Bible</button><button data-tab="mk" class="${bible?'':'on'}">Dag Heward-Mills</button></div>${card}${bible?shufBtn:''}
     ${hist.length>1?`<div class="lb">Recent picks</div><div class="hist">${hist.slice(1).map(h=>`<div>${h.k==='b'?`${NAMES[h.b]} ${h.c}`:`${esc(h.t)}${h.c?`, ch. ${h.c}`:''}`}<span>${ago(h.at)}</span></div>`).join('')}</div>`:''}`;
 }
 function openRand(){
@@ -1350,6 +1437,7 @@ $('#prefs').addEventListener('input',e=>{
 $('#randp').onclick=e=>{
   e.stopPropagation();
   const b=e.target.closest('button'); if(!b) return;
+  if('shuf' in b.dataset){ RP.token++; return shufOpen(); }
   if(b.dataset.tab){ RP.token++; RP.tab=S.rtab=b.dataset.tab; RP.editing=false; save(); (RP.tab==='bible'?RP.cur.bible:RP.cur.mk)?renderRand():pick(); }
   else if(b.dataset.scope){ RP.scope=S.rscope=b.dataset.scope; save(); pick(); }
   else if(b.dataset.mkset){ RP.mkset=S.rmkset=b.dataset.mkset; save(); pick(); }
@@ -1458,6 +1546,10 @@ $('#q').addEventListener('keydown',e=>{
   } else if(e.key==='Escape'){ e.target.value=''; e.target.blur(); if(searchMode) draw(); }
 });
 document.addEventListener('keydown',e=>{
+  if($('#shuf').classList.contains('open')&&!(e.metaKey||e.ctrlKey)){
+    if(e.key==='Escape') shufClose(); else if(e.key==='ArrowRight'||e.key==='Enter') shufNext(); else if(e.key==='ArrowLeft') shufPrev(); else if(e.key===' '){ e.preventDefault(); shufPause(); }
+    shufWake(); return;
+  }
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); openNav(true); return;}
   if(e.target.matches&&e.target.matches('input,textarea,select')) return;
   if(e.key==='Escape'){ closePop(); closeSheets(); $('#modal').classList.remove('open'); if($('#bodyg').classList.contains('withpanel')) closePanel(); else if(searchMode) draw(); }
@@ -1477,6 +1569,7 @@ const mkey=(b,c,v)=>`m-${b}.${c}.${v}`;
 let MARKS={}, MSTORE=null;
 function localMarks(){ return store.get('marks',{}); }
 function applyMarks(){
+  if(oneMode()&&$('#one')) return draw(ONE);
   if(searchMode&&searchMode.type==='m') return showMarks(searchMode.f);
   document.querySelectorAll('#verses .v').forEach(el=>{
     const n=+el.dataset.n, mk=MARKS[mkey(S.b,S.c+1,n)];
@@ -1564,6 +1657,78 @@ async function copyText(s){
   try{ document.execCommand('copy'); toast('Copied'); }catch(e){ toast('Copy isn’t allowed here. Select the text and press ⌘C.'); } ta.remove();
 }
 
+
+// ---------- Verse shuffle (like Stobite TV): a random verse full screen, a new one every few seconds ----------
+// Uses the current version; with God's words only on, it picks only words spoken by God. Keeps the screen awake.
+const SHUF={hist:[],i:-1,timer:0,paused:false,lock:null,idle:0,swiped:false};
+const SHUF_EVERY=[15,30,60,120,300];
+const shufEvery=()=>SHUF_EVERY.includes(S.shufEvery)?S.shufEvery:60;
+const shufLabel=n=>n<60?n+'s':(n/60)+' min';
+function shufPick(){
+  const D=DATA[S.v], G=godOn();
+  for(let t=0;t<300;t++){
+    const b=rnd(66), c=rnd(D[b].length||1), v=rnd((D[b][c]||[]).length||1), x=(D[b][c]||[])[v];
+    if(!x) continue;
+    if(G){ if(!/[{«]/.test(x)) continue; const r=render(x,{god:true}), len=r.html.replace(/<[^>]+>/g,'').length; if(len<25||len>360) continue; return {b,c,v,html:r.html}; }
+    const len=plain(x).length; if(len<40||len>320) continue;
+    return {b,c,v,html:render(x,{god:false,strongs:false}).html};
+  }
+  return null;
+}
+function shufShow(){
+  const x=SHUF.hist[SHUF.i]; if(!x) return;
+  const fig=$('#shuf .sfig'); fig.classList.remove('in'); void fig.offsetWidth; fig.classList.add('in');
+  $('#shq').innerHTML=x.html; $('#shr').textContent=`${NAMES[x.b]} ${x.c+1}:${x.v+1} · ${VN[S.v]}`;
+  shufTimer();
+}
+function shufTimer(){
+  clearTimeout(SHUF.timer); const bar=$('#shi'); bar.classList.remove('run'); void bar.offsetWidth;
+  if(SHUF.paused){ bar.style.width='0'; return; }
+  bar.style.width=''; bar.style.animationDuration=shufEvery()+'s'; bar.classList.add('run');
+  SHUF.timer=setTimeout(shufNext,shufEvery()*1000);
+}
+function shufNext(){ if(SHUF.i<SHUF.hist.length-1) SHUF.i++; else { const x=shufPick(); if(!x) return; SHUF.hist.push(x); if(SHUF.hist.length>200){ SHUF.hist.shift(); } SHUF.i=SHUF.hist.length-1; } shufShow(); }
+function shufPrev(){ if(SHUF.i>0){ SHUF.i--; shufShow(); } }
+function shufPause(){ SHUF.paused=!SHUF.paused; shufTimer(); shufCtl(); }
+function shufCtl(){
+  const I={prev:'<path d="m12.5 4.5-5.5 5.5 5.5 5.5"/>',next:'<path d="m7.5 4.5 5.5 5.5-5.5 5.5"/>',pause:'<path d="M7 4.5v11M13 4.5v11"/>',play:'<path d="M6.5 4.5v11l9-5.5z" fill="currentColor"/>',full:'<path d="M3.5 7.5v-4h4M16.5 7.5v-4h-4M3.5 12.5v4h4M16.5 12.5v4h-4"/>',close:'<path d="m5.5 5.5 9 9m0-9-9 9"/>'};
+  const ic=k=>`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${I[k]}</svg>`;
+  $('#shctl').innerHTML=`<button data-s="prev" title="Previous (←)" aria-label="Previous verse">${ic('prev')}</button>
+    <button data-s="pause" title="${SHUF.paused?'Play':'Pause'} (space)" aria-label="${SHUF.paused?'Play':'Pause'}">${ic(SHUF.paused?'play':'pause')}</button>
+    <button data-s="next" title="Next (→)" aria-label="Next verse">${ic('next')}</button><i class="sep"></i>
+    <button data-s="every" title="Time on each verse">${shufLabel(shufEvery())}</button>
+    <button data-s="open" title="Open this chapter">Open</button>
+    ${document.fullscreenEnabled?`<button data-s="full" title="Full screen" aria-label="Full screen">${ic('full')}</button>`:''}
+    <button data-s="close" title="Close (Esc)" aria-label="Close">${ic('close')}</button>`;
+}
+function shufWake(){ const el=$('#shuf'); el.classList.remove('idle'); clearTimeout(SHUF.idle); SHUF.idle=setTimeout(()=>el.classList.add('idle'),3000); }
+async function shufLock(){ try{ if(navigator.wakeLock&&document.visibilityState==='visible') SHUF.lock=await navigator.wakeLock.request('screen'); }catch(e){} }
+function shufOpen(){
+  closeSheets(); closePop(); SHUF.paused=false; shufCtl();
+  $('#shuf').classList.add('open'); document.body.classList.add('shuf-open'); shufWake(); shufLock();
+  shufNext();
+}
+function shufClose(){
+  clearTimeout(SHUF.timer); clearTimeout(SHUF.idle); $('#shuf').classList.remove('open'); document.body.classList.remove('shuf-open');
+  try{ SHUF.lock&&SHUF.lock.release(); }catch(e){} SHUF.lock=null;
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+}
+$('#shuf').addEventListener('click',e=>{
+  e.stopPropagation(); shufWake(); if(SHUF.swiped){ SHUF.swiped=false; return; }
+  const b=e.target.closest('#shctl button');
+  if(!b){ if(!e.target.closest('#shctl')) shufNext(); return; }
+  const k=b.dataset.s;
+  if(k==='prev') shufPrev(); else if(k==='next') shufNext(); else if(k==='pause') shufPause();
+  else if(k==='every'){ const i=SHUF_EVERY.indexOf(shufEvery()); S.shufEvery=SHUF_EVERY[(i+1)%SHUF_EVERY.length]; save(); shufCtl(); shufTimer(); }
+  else if(k==='open'){ const x=SHUF.hist[SHUF.i]; shufClose(); if(x) go(x.b,x.c,x.v+1); }
+  else if(k==='full'){ document.fullscreenElement?document.exitFullscreen():$('#shuf').requestFullscreen().catch(()=>{}); }
+  else if(k==='close') shufClose();
+});
+$('#shuf').addEventListener('mousemove',shufWake);
+{ let x0=null,y0=0; $('#shuf').addEventListener('touchstart',e=>{ shufWake(); const t=e.touches[0]; x0=t.clientX; y0=t.clientY; },{passive:true});
+  $('#shuf').addEventListener('touchend',e=>{ if(x0==null) return; const t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0; x0=null;
+    if(Math.abs(dx)>60&&Math.abs(dy)<60){ SHUF.swiped=true; dx<0?shufNext():shufPrev(); } },{passive:true}); }
+document.addEventListener('visibilitychange',()=>{ if($('#shuf').classList.contains('open')&&document.visibilityState==='visible') shufLock(); });
 
 // ---------- Reading plan ----------
 // Pick a start chapter, an end chapter and a finish date; the app works out what to read each day.

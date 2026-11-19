@@ -28,6 +28,13 @@ A personal Bible reader for Ben. He uses it on his Mac (Safari or Chrome) **and 
   - `.gitignore` keeps out `dist/` and `ePUB/`. The EPUBs are copyrighted and 200 MB, and must never be committed.
   - Ship everything with **`rebuild-bible ["what changed"]`** (scripts/rebuild-bible.sh, set up in ~/.zshrc). It builds, makes the site, installs the Mac app, commits and does a plain push, with no Actions.
   - On Pages there is no claude.ai `db`, so highlights, plans and imports stay in that phone's browser. The old claude.ai artifact is no longer the phone route.
+- **One verse at a time (Nov 2026).** Settings → Layout → **One verse** (`S.layout='one'`, `oneMode()`, `drawOne()`). It shows a single large verse with its reference (tap the reference for the verse panel), a progress line and "n of N".
+  - `stepVerse(±1)` is driven by ← →, the edge arrows (`#prev`/`#next`), swipe, or a tap on the left third or right two-thirds. It carries on into the next or previous chapter. God's-words mode limits it to verses with divine speech.
+  - The position is kept in `ONE`/`ONEKEY` (saved as `S.ov`/`S.ovk`). `applyMarks()` redraws in this mode.
+- **Verse shuffle (Nov 2026), modelled on Stobite TV's Bible screen.** Opens from ☰ → Verse shuffle, the dice sheet, or Mac Go → Verse Shuffle (⇧⌘V). It shows `#shuf` full screen, in `--shbg` (#f4f1ea light, #0b0c0f dark).
+  - Each verse is a random readable one (40–320 characters; only divine speech when God's words is on) from the current version. It changes every `S.shufEvery` seconds (15/30/60/120/300; the button cycles through them), with a fade-up and a progress bar along the bottom.
+  - ← → step through a history of the last 200, space pauses, tap or swipe advances, **Open** jumps to the chapter, and Esc closes.
+  - The controls hide after 3 seconds idle. The screen wake lock keeps the display on. Full screen uses the Fullscreen API (`isElementFullscreenEnabled` in the Mac app; the button is hidden where it isn't supported, such as iPhone Safari).
 - **Settings (Nov 2026).** The **Aa** panel has a short main page with three sections: Reading (switches), Text (Font ›, Size, Line spacing, Margins) and Page (Layout, Chapter heading ›, Appearance). Font and Chapter heading are sub-pages (`PREFPAGE`). Highlights and About live only in ☰.
 - **Reading plan (Nov 2026).** ☰ → Reading plan (Mac: Go → Reading Plan, ⇧⌘P) opens `#planp`.
   - Ben picks a start chapter, an end chapter, a finish date and optional days off. Presets: Whole Bible, Old Testament, New Testament, Here to Revelation.

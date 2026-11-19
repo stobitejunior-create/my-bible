@@ -41,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(BundleSchemeHandler(), forURLScheme: SCHEME)
         config.websiteDataStore = .default()
+        config.preferences.isElementFullscreenEnabled = true   // verse shuffle full screen
         config.userContentController.add(self, name: "native")
         // Let the page know it is running in the Mac app, and give it every installed font family for Settings → Font.
         let families = NSFontManager.shared.availableFontFamilies.filter { !$0.hasPrefix(".") }.sorted()
@@ -109,6 +110,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         go.addItem(.separator())
         go.addItem(item("Random Reading", #selector(randomReading), "r"))
         go.addItem(item("Reading Plan…", #selector(readingPlan), "p", [.command, .shift]))
+        go.addItem(item("Verse Shuffle", #selector(verseShuffle), "v", [.command, .shift]))
         go.addItem(item("Highlights and Notes", #selector(highlights), "b", [.command, .shift]))
         let view = NSMenu(title: "View")
         view.addItem(item("Actual Size", #selector(zoomReset), "0"))
@@ -137,6 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
     @objc func nextChapter() { js("document.getElementById('next').click()") }
     @objc func randomReading() { js("document.getElementById('rand').click()") }
     @objc func readingPlan() { js("openPlan()") }
+    @objc func verseShuffle() { js("shufOpen()") }
     @objc func highlights() { js("closeSheets(); showMarks('all')") }
     @objc func settings() { js("document.getElementById('gear').click()") }
     @objc func showAbout() { js("closeSheets(); document.getElementById('modal').classList.add('open')") }

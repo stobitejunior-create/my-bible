@@ -28,6 +28,26 @@ A personal Bible reader for Ben. He uses it on his Mac (Safari or Chrome) **and 
   - `.gitignore` keeps out `dist/` and `ePUB/`. The EPUBs are copyrighted and 200 MB, and must never be committed.
   - Ship everything with **`rebuild-bible ["what changed"]`** (scripts/rebuild-bible.sh, set up in ~/.zshrc). It builds, makes the site, installs the Mac app, commits and does a plain push, with no Actions.
   - On Pages there is no claude.ai `db`, so highlights, plans and imports stay in that phone's browser. The old claude.ai artifact is no longer the phone route.
+- **Nov 2026 batch, in `src/extras.js` (built after app.js into the same script).**
+  - **Sync.** It uses the Stobite Buy Supabase project `hfamehbhdwptnlwmjsgi`, sharing its auth (email and password, same accounts as Buy), and only touches its own table `bible_docs`, created by `supabase/bible_sync.sql`.
+    - The table has row-level security per user, a 256 KB cap per document, and server-stamped `updated_at`.
+    - The client is plain REST (`sbAuth`/`sbRest`) with no supabase-js. The publishable key is in extras.js, which is fine because it is meant to be public.
+    - It works local-first: `syncPut(id,data)` queues into `OUTBOX` (localStorage), pushes after 1.5 s, pulls every 60 s and when the app becomes visible, and `applyRemote()` merges.
+    - Synced document ids: `m-b.c.v` (highlights and notes), `x-plan`, `x-reading` (chapter counts and picks), `x-bookmarks`, `x-history` (merged as a union), `x-mem` and `x-pos` (the last place read, which shows the "Continue at … from your iPhone" banner `#cont`).
+    - On first sign-in, highlights keep the newer copy, and plan and reading use the account copy if one exists.
+    - Imported Bibles and settings are not synced.
+  - **Bookmarks and history.** ☰ → Bookmarks and history (`showBookmarks()`, searchMode `bm`) shows bookmarks (from the verse panel), memory verses and the last chapters read (`histRecord()` runs in draw).
+  - **Compare.** The verse panel's "Other versions" (`fillCompare`) shows the verse in every other version, including imports.
+  - **Search filters.** Chips for Whole Bible / OT / NT / Gospels / this book (`S.sscope`) and God's words (`S.sgod`).
+  - **Reading plan.** Pace against the start date (`planPace`) with **Catch up today**, **Read ahead** once today is done, and **Add to Calendar**, an .ics with a daily alarm until the end date that skips days off. The Mac app saves the file and opens it in Calendar through the `native` message `{type:'file'}`.
+  - **Memorise.** In the verse panel, `#memo` has 6 levels, from read it to all hidden. Tap a gap to reveal the word; memory verses are kept in `MEM`.
+  - **Themes.** Sepia and Black join Automatic/Light/Dark under Settings → Appearance (a sub-page, `THEMES`).
+  - **Dag Heward-Mills chapters (Mac app only).** `mac/Epub.swift` indexes Ben's EPUB folder (File → Choose Dag Heward-Mills Book Folder; default is ePUB/ here) into ~/Library/Application Support/My Bible/epub-index.json. It serves bible://app/epub-index.json and bible://app/epub/<id>/<path>, unzipping on first open into ~/Library/Caches/My Bible/epub.
+    - The dice's Dag Heward-Mills card shows the chapter title and **Read this chapter**, which opens the reader `#epr`: an iframe styled with the app's font, size and theme, with ← → for chapters.
+    - `epChapters()` maps chapter N to the contents entry numbered N, the same way the counts were made. 215 of 216 titles match (the missing one is The Love of the Spirit, which isn't in the folder). About 16 books with odd contents pages get "Open the book" instead.
+    - The EPUBs never go into git or the site.
+  - **Mac test hooks.** `MYBIBLE_SELFTEST=1` (storage, fonts, EPUB index and title matching); `MYBIBLE_EVAL="js"` runs JS 3 s after loading. stdout is line-buffered. A locked screen makes window captures come out blank.
+- **Data fixes (Nov 2026).** `pipeline/s11_kjv_tails.py` restored 26 cut-off KJV verse endings from CrossWire: 21 psalm verse 1s, plus 5 lost italic supplied words, Judges 21:9, Ps 119:129, Mark 11:24, Mark 12:15 and Luke 17:22. `pipeline/s12_hosea.py` marks God's words in Hosea 4–14 from a verse-by-verse speaker reading (119 of 158 verses). Pipeline order: s8 → s10 → s11 → s12, all safe to re-run.
 - **One verse at a time (Nov 2026).** Settings → Layout → **One verse** (`S.layout='one'`, `oneMode()`, `drawOne()`). It shows a single large verse with its reference (tap the reference for the verse panel), a progress line and "n of N".
   - `stepVerse(±1)` is driven by ← →, the edge arrows (`#prev`/`#next`), swipe, or a tap on the left third or right two-thirds. It carries on into the next or previous chapter. God's-words mode limits it to verses with divine speech.
   - The position is kept in `ONE`/`ONEKEY` (saved as `S.ov`/`S.ovk`). `applyMarks()` redraws in this mode.
@@ -96,6 +116,8 @@ CLAUDE.md
 build.py                 # assembles dist/bible.html (run: python3 build.py)
 src/template.html        # all HTML + CSS; placeholders __KJV__ __BSB__ __WEB__ __ASV__ __BLB__ __LEX__ __XREF__ __JS__
 src/app.js               # all application JavaScript (plain JS, no framework, no build step)
+src/extras.js            # Nov 2026 features (sync, bookmarks, memorise, plan extras, EPUB reader); built after app.js
+supabase/bible_sync.sql  # the bible_docs table for sync (run once in the Stobite Buy Supabase project)
 src/makarios.js          # Dag Heward-Mills book list for the random picker; build.py puts it before app.js
 Makarios.java            # Ben's original Java randomiser (source of the chapter counts); not used by the build
 data/*.b64               # packed datasets: gzip -> base64 JSON (see "Data formats")

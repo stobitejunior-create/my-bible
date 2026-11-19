@@ -211,7 +211,7 @@ function draw(flashV){
   if(nx) h+=`<button class="pill pri" data-go="${nx}">${NAMES[nx[0]]} ${nx[1]+1} ›</button>`;
   h+=planBtn();
   h+='</div>';
-  $('#col').innerHTML=h; $('#col').classList.toggle('wide',!!par); $('#col').classList.toggle('flow',flow); $('#col').classList.remove('onev'); buildBooks(); syncControls(); save();
+  $('#col').innerHTML=h; $('#col').classList.toggle('wide',!!par); $('#col').classList.toggle('flow',flow); $('#col').classList.remove('onev'); buildBooks(); syncControls(); save(); histRecord();
   if(flashV){const el=document.getElementById('v'+flashV); if(el){el.scrollIntoView({block:'center'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1400);}}
   else $('#scroll').scrollTop=0;
 }
@@ -238,7 +238,7 @@ function drawOne(ch,o,G,flashV){
       ${p===L.length-1&&planBtn()?`<div class="next">${planBtn()}</div>`:''}
     </div>`;
   }
-  $('#col').innerHTML=h; $('#col').classList.remove('wide','flow'); $('#col').classList.add('onev'); buildBooks(); syncControls(); save(); $('#scroll').scrollTop=0;
+  $('#col').innerHTML=h; $('#col').classList.remove('wide','flow'); $('#col').classList.add('onev'); buildBooks(); syncControls(); save(); histRecord(); $('#scroll').scrollTop=0;
 }
 function stepVerse(d){
   const G=godOn(), wasOpen=$('#bodyg').classList.contains('withpanel'), L=oneList(DATA[S.v][S.b][S.c]||[],G), p=L.indexOf(ONE);
@@ -259,6 +259,7 @@ function nextCh(d){
 }
 function go(b,c,v){S.b=b;S.c=c;openBook=b;closePop();SELV=v||0;draw(v); if(v&&$('#bodyg').classList.contains('withpanel')) openPanel(v); else if(!v) closePanel();}
 $('#col').addEventListener('click',e=>{
+  if(extrasClick(e)) return;
   const p=e.target.closest('[data-go]'); if(p){const [b,c]=p.dataset.go.split(',').map(Number); go(b,c); return;}
   const w=e.target.closest('.w'); if(w&&!String(getSelection())){e.stopPropagation(); showPop(w.dataset.s.split(' '),w); return;}
   const one=e.target.closest('#one');
@@ -431,6 +432,8 @@ const ICON={
   marks:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5.5 3h9v14l-4.5-3.2L5.5 17z"/></svg>',
   imp:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v9m-3.5-3.5L10 12l3.5-3.5M4 14v2.5h12V14"/></svg>',
   shuf:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h3.5c2.5 0 3.5 1.5 4.5 4s2 4 4.5 4H17M3 14h3.5c1.2 0 2-.4 2.7-1.1M17 6h-1.5c-1.2 0-2 .4-2.7 1.1M15 4l2 2-2 2M15 12l2 2-2 2"/></svg>',
+  bm:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2"/></svg>',
+  sync:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8.5A6 6 0 0 0 5 6.2M4 11.5a6 6 0 0 0 11 2.3"/><path d="M5 3v3.3h3.3M15 17v-3.3h-3.3"/></svg>',
   plan:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="14" height="12.5" rx="2.5"/><path d="M3 8.5h14M7 3v3M13 3v3M7.5 12.5l1.7 1.7 3.3-3.4"/></svg>',
   info:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6.2v.1" stroke-linecap="round"/></svg>'};
 function renderMenu(mode){
@@ -450,6 +453,8 @@ function renderMenu(mode){
     <button class="mi" data-m="shuffle">${ICON.shuf}Verse shuffle</button>
     <button class="mi" data-m="search">${ICON.search}Search<small>⌘K</small></button>
     <button class="mi" data-m="marks">${ICON.marks}Highlights and notes</button>
+    <button class="mi" data-m="bm">${ICON.bm}Bookmarks and history</button>
+    ${MSTORE?'':`<button class="mi" data-m="sync">${ICON.sync}Sync<small>${SB?'On':'Off'}</small></button>`}
     <button class="mi" data-m="import">${ICON.imp}Import a Bible (XML)…</button>
     ${IMPORTS.length?`<div class="lbx">Imported</div>${IMPORTS.map(x=>`<div class="imp"><b>${esc(x.abbr)}</b><span>${esc(x.name)}</span><button data-rmimp="${x.id}">Remove</button></div>`).join('')}`:''}
     <hr><button class="mi" data-m="about">${ICON.info}About</button>`;
@@ -461,6 +466,8 @@ $('#menup').onclick=e=>{
   const k=b.dataset.m;
   if(k==='plan'){ openPlan(); }
   else if(k==='shuffle'){ shufOpen(); }
+  else if(k==='bm'){ closeSheets(); showBookmarks(); }
+  else if(k==='sync'){ openSync(); }
   else if(k==='search'){ closeSheets(); openNav(true); }
   else if(k==='marks'){ closeSheets(); showMarks('all'); }
   else if(k==='import'){ $('#xmlfile').click(); }
@@ -508,6 +515,7 @@ function headHTML(style,b,c,v){
 }
 // Settings: a short main page in three sections, with Font and Chapter heading as their own pages.
 let PREFPAGE='main';
+const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['light','Light','White paper','#ffffff','#1d1d1f'],['dark','Dark','Dark grey','#1c1c1e','#f2f2f7'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea']];
 const CHEV_R='<svg class="chv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 2.5 3.5 3.5-3.5 3.5"/></svg>';
 function renderPrefs(){
   const el=$('#prefs');
@@ -519,6 +527,10 @@ function renderPrefs(){
       <div class="sg">${ALLFONTS?`All fonts on this ${window.MAC_APP?'Mac':'device'} (${ALLFONTS.length.toLocaleString()})`:'Other fonts'}</div>
       ${ALLFONTS?`<input class="ffind" id="ffind" type="search" placeholder="Search fonts" value="${esc(FFIND)}" autocomplete="off"><div class="sbox fonts" id="flist">${fontList()}</div>`
         :`<input class="ffind" id="ffind" type="text" placeholder="Type any installed font name" value="${esc(FFIND)}" autocomplete="off"><div style="display:flex;gap:8px"><button class="pill" data-usefont style="flex:1">Use this font</button>${'queryLocalFonts' in window?'<button class="pill" data-listfonts style="flex:1">List my fonts</button>':''}</div>`}`;
+    return;
+  }
+  if(PREFPAGE==='theme'){
+    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k==='auto'?'<i style="background:#1c1c1e"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`).join('')}</div>`;
     return;
   }
   if(PREFPAGE==='heading'){
@@ -544,7 +556,7 @@ function renderPrefs(){
     <div class="sbox">
       <div class="srow"><span>Layout</span>${seg('layout',S.layout,[['verse','Verses'],['para','Paragraph'],['one','One verse']])}</div>
       <button class="srow nav" data-page="heading"><span>Chapter heading</span><span class="sv">${(HEADS.find(h=>h[0]===S.hs)||HEADS[0])[1]}${CHEV_R}</span></button>
-      <div class="srow"><span>Appearance</span>${seg('theme',S.theme,[['auto','Auto'],['light','Light'],['dark','Dark']])}</div>
+      <button class="srow nav" data-page="theme"><span>Appearance</span><span class="sv">${(THEMES.find(t=>t[0]===S.theme)||THEMES[0])[1]}${CHEV_R}</span></button>
     </div>`;
 }
 $('#gear').onclick=()=>{ if($('#prefs').classList.contains('open')) return closePrefs(); PREFPAGE='main'; renderPrefs(); openSheet($('#prefs'),$('#gear')); };
@@ -573,7 +585,7 @@ const MKSETS=[['all','All books'],['makarios','Makarios'],['mini','Mini books'],
 const mkPool=()=>MAKARIOS.map((_,i)=>i).filter(i=>RP.mkset==='all'||MAKARIOS[i][2]===RP.mkset);
 const rnd=n=>Math.floor(Math.random()*n);
 const mkCount=i=>READ.counts[MAKARIOS[i][0]]??MAKARIOS[i][1];
-function saveReading(){ READ.hist=READ.hist.slice(-60); store.set('reading',READ); if(MSTORE) MSTORE.doc('x-reading').set(READ).catch(()=>{}); }
+function saveReading(){ READ.hist=READ.hist.slice(-60); store.set('reading',READ); if(MSTORE) MSTORE.doc('x-reading').set(READ).catch(()=>{}); else syncPut('x-reading',READ); }
 function pick(){
   let label;
   if(RP.tab==='bible'){
@@ -616,7 +628,7 @@ function renderRand(){
   } else {
     const x=RP.cur.mk, [t]=MAKARIOS[x.i], n=mkCount(x.i);
     card=`<div class="card"><div class="k">Dag Heward-Mills</div><div class="big${t.length>30?' long':''}">${esc(t)}</div>
-      ${x.c?`<div class="chn">Chapter <b>${x.c}</b> of ${n}</div><button class="edit" data-editc>Change chapter count</button>`
+      ${x.c?`<div class="chn">Chapter <b>${x.c}</b> of ${n}</div>${window.MAC_APP?epReadHTML(t,x.c):''}<button class="edit" data-editc>Change chapter count</button>`
         :`<div class="sub">This book’s chapter count isn’t set yet.</div>`}
       ${!x.c||RP.editing?`<div class="setc">Chapters in this book <input id="cnt" type="number" min="1" max="400" inputmode="numeric" value="${n||''}"><button class="pill pri" data-setc>Save</button></div>`:''}</div>
       <div class="scope">${MKSETS.map(([k,l])=>`<button data-mkset="${k}" class="${RP.mkset===k?'on':''}">${l}</button>`).join('')}</div>
@@ -640,6 +652,7 @@ $('#randp').onclick=e=>{
   e.stopPropagation();
   const b=e.target.closest('button'); if(!b) return;
   if('shuf' in b.dataset){ RP.token++; return shufOpen(); }
+  if('epread' in b.dataset){ const x=RP.cur.mk; return epOpen(MAKARIOS[x.i][0],x.c); }
   if(b.dataset.tab){ RP.token++; RP.tab=S.rtab=b.dataset.tab; RP.editing=false; save(); (RP.tab==='bible'?RP.cur.bible:RP.cur.mk)?renderRand():pick(); }
   else if(b.dataset.scope){ RP.scope=S.rscope=b.dataset.scope; save(); pick(); }
   else if(b.dataset.mkset){ RP.mkset=S.rmkset=b.dataset.mkset; save(); pick(); }
@@ -654,7 +667,7 @@ $('#randp').onclick=e=>{
   }
 };
 $('#randp').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='cnt') $('#randp [data-setc]').click(); });
-$('#theme').onclick=()=>{S.theme={auto:'light',light:'dark',dark:'auto'}[S.theme]; syncControls(); save();};
+$('#theme').onclick=()=>{S.theme={auto:'light',light:'dark',dark:'sepia',sepia:'black',black:'auto'}[S.theme]||'auto'; syncControls(); save();};
 // The toolbar slides away while reading down the page and returns when scrolling up.
 { let last=0; $('#scroll').addEventListener('scroll',()=>{
     const y=$('#scroll').scrollTop, bar=$('#bar'), d=y-last; last=y;
@@ -714,20 +727,20 @@ async function textSearch(q){
   if(!PLAIN[v]){PLAIN[v]=[]; DATA[v].forEach((bk,b)=>bk.forEach((ch,c)=>ch.forEach((s,i)=>PLAIN[v].push([b,c,i,plain(s).toLowerCase()]))));}
   const terms=q.toLowerCase().split(/\s+/).filter(Boolean);
   const re=new RegExp('('+terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi');
-  const out=[]; const o={...opts(),q:re}; const phrase=q.toLowerCase().replace(/\s+/g,' ');
+  const out=[]; const o={...opts(),q:re}; if(S.sgod&&MARKED.has(v)) o.god=true; const phrase=q.toLowerCase().replace(/\s+/g,' ');
   const ordered=terms.length>1?[...PLAIN[v].filter(x=>x[3].includes(phrase)),...PLAIN[v].filter(x=>!x[3].includes(phrase))]:PLAIN[v];
   for(const [b,c,i,p] of ordered){
-    if(!terms.every(t=>p.includes(t))) continue;
+    if(!inScope(b)||!terms.every(t=>p.includes(t))) continue;
     const r=render(DATA[v][b][c][i],o);
     if(o.god){ if(!r.has) continue; const txt=r.html.replace(/<[^>]+>/g,'').toLowerCase(); if(!terms.every(t=>txt.includes(t))) continue; }
     out.push([b,c,i,r.html]); if(out.length>=1500) break;
   }
   searchMode={type:'t',q};
   const cap=out.slice(0,400);
-  $('#col').innerHTML=header(`“${esc(q)}”`, out.length?`${out.length>=1500?'1,500+':out.length.toLocaleString()} verses in the ${v.toUpperCase()}${o.god?' within God’s words':''}${out.length>cap.length?', first 400 shown':''}.`:`No verses in the ${v.toUpperCase()} contain every word. Try fewer words, or switch version.`)+resultsHTML(cap,o);
+  $('#col').innerHTML=header(`“${esc(q)}”`, out.length?`${out.length>=1500?'1,500+':out.length.toLocaleString()} verses in the ${v.toUpperCase()}${o.god?' within God’s words':''}${out.length>cap.length?', first 400 shown':''}.`:`No verses in the ${v.toUpperCase()} contain every word. Try fewer words, or switch version.`)+searchChips()+resultsHTML(cap,o);
   $('#col').classList.remove('wide'); $('#reft').textContent='Search'; $('#scroll').scrollTop=0; buildBooks(); syncControls();
 }
-function rerunSearch(){ if(!searchMode) return draw(); if(searchMode.type==='m') return showMarks(searchMode.f); searchMode.type==='s'?strongsSearch(searchMode.id):textSearch(searchMode.q); }
+function rerunSearch(){ if(!searchMode) return draw(); if(searchMode.type==='bm') return showBookmarks(); if(searchMode.type==='m') return showMarks(searchMode.f); searchMode.type==='s'?strongsSearch(searchMode.id):textSearch(searchMode.q); }
 function parseRef(q){
   const m=q.trim().toLowerCase().match(/^([1-3]?\s*[a-z]+(?:\s+of\s+[a-z]+)?)\.?\s*(\d+)?(?:\s*[:.\s]\s*(\d+))?\s*$/);
   if(!m) return null;
@@ -748,6 +761,12 @@ $('#q').addEventListener('keydown',e=>{
   } else if(e.key==='Escape'){ e.target.value=''; e.target.blur(); if(searchMode) draw(); }
 });
 document.addEventListener('keydown',e=>{
+  if($('#epr').classList.contains('open')&&!(e.metaKey||e.ctrlKey)){
+    const n=(EPCUR.list==='ch'&&EPCUR.e.ch.length?EPCUR.e.ch:EPCUR.e.toc).length;
+    if(e.key==='Escape') $('#epr [data-epx]').click(); else if(e.key==='ArrowRight'&&EPCUR.c<n){ EPCUR.c++; epShow(); } else if(e.key==='ArrowLeft'&&EPCUR.c>1){ EPCUR.c--; epShow(); }
+    return;
+  }
+  if($('#memo').classList.contains('open')){ if(e.key==='Escape') $('#memo').classList.remove('open'); return; }
   if($('#shuf').classList.contains('open')&&!(e.metaKey||e.ctrlKey)){
     if(e.key==='Escape') shufClose(); else if(e.key==='ArrowRight'||e.key==='Enter') shufNext(); else if(e.key==='ArrowLeft') shufPrev(); else if(e.key===' '){ e.preventDefault(); shufPause(); }
     shufWake(); return;
@@ -803,7 +822,7 @@ async function setMark(b,c,v,patch){
   if(empty) delete MARKS[k]; else MARKS[k]=cur;
   applyMarks();
   if(MSTORE){ try{ empty?await MSTORE.doc(k).delete():await MSTORE.doc(k).set(cur); return true; }catch(e){ toast('Couldn’t save. Check your connection and try again.'); return false; } }
-  const L=localMarks(); if(empty) delete L[k]; else L[k]=cur; store.set('marks',L); return true;
+  const L=localMarks(); if(empty) delete L[k]; else L[k]=cur; store.set('marks',L); syncPut(k,empty?null:cur); return true;
 }
 function showMarks(f){
   f=f||'all'; searchMode={type:'m',f}; closePanel(false);
@@ -837,7 +856,9 @@ async function openPanel(n){
     <div class="lb">Note</div>
     <textarea id="note" placeholder="Write a note on this verse">${esc(mk.note||'')}</textarea>
     <div class="saved" id="saved"></div>
-    <div class="acts"><button class="pill" id="copyv">Copy verse</button><a class="pill" href="${nkjvURL(b,c,n)}" target="_blank" rel="noopener">NKJV with Strong’s ↗</a></div>
+    <div class="acts"><button class="pill" id="bmv">${bmIndex(b,c,n)>=0?'Bookmarked ✓':'Bookmark'}</button><button class="pill" id="memv">Memorise</button><button class="pill" id="copyv">Copy</button><a class="pill" href="${nkjvURL(b,c,n)}" target="_blank" rel="noopener">NKJV ↗</a></div>
+    <div class="lb">Other versions</div>
+    <div id="cmp"><span class="mute">Loading…</span></div>
     <div class="lb">Cross references</div>
     <div id="xr"><span style="font-size:13px;color:var(--muted)">Loading…</span></div>
   </div>`;
@@ -845,6 +866,9 @@ async function openPanel(n){
   p.querySelectorAll('[data-col]').forEach(bt=>bt.onclick=async()=>{ await setMark(b,c,n,{color:bt.dataset.col}); p.querySelectorAll('[data-col]').forEach(x=>x.classList.toggle('on',x===bt)); });
   $('#note').oninput=e=>{ clearTimeout(noteTimer); $('#saved').textContent=''; const val=e.target.value; noteTimer=setTimeout(async()=>{ if(await setMark(b,c,n,{note:val})) $('#saved').textContent='Saved'; },600); };
   $('#copyv').onclick=()=>copyText(`“${txt}” ${NAMES[b]} ${c}:${n} (${VN[S.v]})`);
+  $('#bmv').onclick=()=>{ const on=toggleBookmark(b,c,n); $('#bmv').textContent=on?'Bookmarked ✓':'Bookmark'; toast(on?'Bookmarked':'Bookmark removed'); };
+  $('#memv').onclick=()=>memoOpen(b,c,n);
+  fillCompare(b,c,n);
   const X=await xrefs(); if(SELV!==n||S.b!==b) return;
   const list=((X[b]||[])[c-1]||[])[n-1]||'';
   const items=list?list.split(' ').map(parseX).filter(Boolean):[];
@@ -943,7 +967,7 @@ const parseYmd=t=>{ const [y,m,d]=t.split('-').map(Number); return new Date(y,m-
 const DAYN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const dayLabel=t=>parseYmd(t).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
 const dayLong=t=>parseYmd(t).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
-function savePlan(){ store.set('plan',PLAN); if(MSTORE) MSTORE.doc('x-plan').set(PLAN||{gone:true}).catch(()=>{}); }
+function savePlan(){ store.set('plan',PLAN); if(MSTORE) MSTORE.doc('x-plan').set(PLAN||{gone:true}).catch(()=>{}); else syncPut('x-plan',PLAN); }
 const chKey=(b,c)=>b+'.'+c;
 const chW=(b,c)=>(VD()[b][c]||[]).length||1;
 function planChapters(P){
@@ -1043,6 +1067,7 @@ function planMainHTML(){
     <div class="pbar"><i style="width:${pg.pct}%"></i></div>
     <div class="pstat"><span><b>${pg.n.toLocaleString()}</b> of ${pg.total.toLocaleString()} chapters · ${pg.pct}%</span><span>${left} reading ${left===1?'day':'days'} left</span></div>
     <div class="pstat" style="margin-top:2px"><span>Finish by ${dayLong(PLAN.end)}</span><span>${fmtCh(ends.slice(0,1))} → ${fmtCh(ends.slice(-1))}</span></div>`;
+  h+=planExtrasHTML(today,done,fut);
   if(fut.left>0&&fut.days.length===0&&left<=1&&today.length&&done.length<today.length) h+='';
   else if(fut.left>0&&fut.days.length===0) h+=`<div class="pwarn">The finish date is here and ${fut.left} chapters are still unread. Edit the plan to choose a new date.</div>`;
   const rows=fut.sched.map(x=>`<div class="prw"><span>${dayLabel(x.date)}</span><b>${fmtCh(x.ch)}</b><i>${x.ch.length} ch</i></div>`);
@@ -1068,6 +1093,7 @@ function toggleChapter(b,c,on){
 }
 $('#planp').onclick=e=>{
   e.stopPropagation(); const b=e.target.closest('button'); if(!b) return; const D=b.dataset;
+  if(planExtrasClick(D)) return;
   if('pclose' in D) return closeSheets();
   if('pcancel' in D){ if(PLAN){ PLANVIEW='main'; renderPlan(); } else closeSheets(); return; }
   if('preset' in D){ const [a,z]=D.preset.split('|').map(x=>x.split(',').map(Number)); PLANDRAFT.from=a; PLANDRAFT.to=z; PLANVIEW='setup'; renderPlan(); return; }
@@ -1106,6 +1132,8 @@ $('#col').addEventListener('click',e=>{
     await loadImports(); if(!VN[S.v]) S.v='kjv'; if(!VN[S.v2]) S.v2='bsb';
     await load(S.v); if(S.par) await load(S.v2); if(S.v!=='kjv') load('kjv');
     draw(); initMarks(); $('#loading').remove();
+    if(syncOn()) setTimeout(()=>syncNow(),1500);
+    if(window.MAC_APP) setTimeout(()=>epubIndex(),1200);
     setTimeout(()=>{lex(); xrefs(); Object.keys(VN).forEach(v=>load(v));},600);
   }catch(err){ $('#loading').innerHTML='<div style="max-width:320px;text-align:center;line-height:1.5">'+esc(err.message||String(err))+'</div>'; }
 })();

@@ -15,6 +15,19 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
         guard let url = task.request.url else { return }
         var path = url.path
         if path.isEmpty || path == "/" { path = "/bible.html" }
+        // Dag Heward-Mills books from Ben's EPUB folder (see Epub.swift)
+        if path == "/epub-index.json" { return respond(task, url, EpubLibrary.shared.indexJSON(), "application/json") }
+        if path.hasPrefix("/epub/") {
+            let rest = path.dropFirst(6).split(separator: "/", maxSplits: 1).map(String.init)
+            if rest.count == 2, let d = EpubLibrary.shared.file(rest[0], rest[1]) {
+                let ext = (rest[1] as NSString).pathExtension.lowercased()
+                let types = ["xhtml": "application/xhtml+xml; charset=utf-8", "html": "text/html; charset=utf-8", "htm": "text/html; charset=utf-8", "css": "text/css",
+                             "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "svg": "image/svg+xml", "xml": "application/xml",
+                             "ncx": "application/xml", "ttf": "font/ttf", "otf": "font/otf", "woff": "font/woff", "woff2": "font/woff2"]
+                return respond(task, url, d, types[ext] ?? "application/octet-stream")
+            }
+            return task.didFailWithError(NSError(domain: NSURLErrorDomain, code: NSURLErrorFileDoesNotExist))
+        }
         let base = Bundle.main.resourceURL!.appendingPathComponent("web")
         let file = base.appendingPathComponent(String(path.dropFirst())).standardizedFileURL
         guard file.path.hasPrefix(base.path), let data = try? Data(contentsOf: file) else {
@@ -27,6 +40,10 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
         task.didReceive(response)
         task.didReceive(data)
         task.didFinish()
+    }
+    func respond(_ task: WKURLSchemeTask, _ url: URL, _ data: Data, _ type: String) {
+        let r = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": type, "Content-Length": String(data.count), "Cache-Control": "no-store"])!
+        task.didReceive(r); task.didReceive(data); task.didFinish()
     }
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
 }
@@ -69,6 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
             if let t = w.title, !t.isEmpty { self?.window.title = t }
         }
         buildMenu()
+        EpubLibrary.shared.rebuild { [weak self] in self?.js("window.epubReload&&epubReload()") }
         web.load(URLRequest(url: START))
     }
 
@@ -91,6 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         app.addItem(item("Quit My Bible", #selector(NSApplication.terminate(_:)), "q"))
         let file = NSMenu(title: "File")
         file.addItem(item("Import a Bible (XML)…", #selector(importBible), "o"))
+        file.addItem(item("Choose Dag Heward-Mills Book Folder…", #selector(chooseBooks)))
         file.addItem(.separator())
         file.addItem(item("Close Window", #selector(NSWindow.performClose(_:)), "w"))
         let edit = NSMenu(title: "Edit")
@@ -112,6 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         go.addItem(item("Reading Plan…", #selector(readingPlan), "p", [.command, .shift]))
         go.addItem(item("Verse Shuffle", #selector(verseShuffle), "v", [.command, .shift]))
         go.addItem(item("Highlights and Notes", #selector(highlights), "b", [.command, .shift]))
+        go.addItem(item("Bookmarks and History", #selector(bookmarks), "y"))
         let view = NSMenu(title: "View")
         view.addItem(item("Actual Size", #selector(zoomReset), "0"))
         view.addItem(item("Zoom In", #selector(zoomIn), "="))
@@ -141,6 +161,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
     @objc func readingPlan() { js("openPlan()") }
     @objc func verseShuffle() { js("shufOpen()") }
     @objc func highlights() { js("closeSheets(); showMarks('all')") }
+    @objc func bookmarks() { js("closeSheets(); showBookmarks()") }
+    /// The folder of EPUBs the Dag Heward-Mills picker reads chapters from.
+    @objc func chooseBooks() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false
+        panel.message = "Choose the folder that holds your Dag Heward-Mills EPUB books"
+        if let f = EpubLibrary.shared.folder { panel.directoryURL = f }
+        panel.beginSheetModal(for: window) { [weak self] r in
+            guard r == .OK, let url = panel.url else { return }
+            EpubLibrary.shared.setFolder(url) { self?.js("window.epubReload&&epubReload(); toast('Found ' + \(EpubLibrary.shared.books.count) + ' books')") }
+        }
+    }
     @objc func settings() { js("document.getElementById('gear').click()") }
     @objc func showAbout() { js("closeSheets(); document.getElementById('modal').classList.add('open')") }
     @objc func zoomIn() { web.pageZoom = min(web.pageZoom + 0.1, 2.5) }
@@ -206,6 +238,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
     // MARK: self-test (MYBIBLE_SELFTEST=1): checks storage survives a reload, then quits
     var testStage = 0
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // MYBIBLE_EVAL="js" runs that JavaScript 3 s after loading (for screenshots of a particular screen).
+        if let code = ProcessInfo.processInfo.environment["MYBIBLE_EVAL"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [self] in web.callAsyncJavaScript(code, arguments: [:], in: nil, in: .page) { _ in } }
+        }
         guard selfTest else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [self] in
             if testStage == 0 {
@@ -222,7 +258,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
                 web.callAsyncJavaScript("""
                     const m = await idb('meta','get','x_selftest'); await idb('meta','del','x_selftest');
                     const ls = localStorage.getItem('selftest'); localStorage.removeItem('selftest');
-                    return 'after reload: localStorage=' + ls + ' indexedDB=' + (m ? m.name : 'missing') + ' | ' + document.title + ' | versions=' + Object.keys(VN).length + ' | fonts=' + (window.MAC_FONTS||[]).length + ' e.g. ' + (window.MAC_FONTS||[]).slice(0,4).join(', ');
+                    let idx = null; for (let i = 0; i < 90; i++) { idx = await (await fetch('epub-index.json')).json(); if (!idx.building) break; await new Promise(r => setTimeout(r, 1000)); }
+                    const bk = (idx.books || []).find(b => /Loyalty and Disloyalty/i.test(b.title)) || (idx.books || [])[0];
+                    let ch = 'none'; if (bk && bk.toc.length) { const r = await fetch('epub/' + bk.id + '/' + bk.toc[Math.min(3, bk.toc.length - 1)][1].split('#')[0]); ch = r.status + ' ' + (await r.text()).length + ' bytes'; }
+                    const ep = 'epubs=' + (idx.books || []).length + ' sample=' + (bk ? bk.title + ' toc=' + bk.toc.length : '-') + ' chapter fetch=' + ch;
+                    await epubIndex(true);
+                    const tt = MAKARIOS.map(m => m[0]), hit = tt.filter(t => epFor(t)), miss = tt.filter(t => !epFor(t));
+                    const off = hit.filter(t => { const n = MAKARIOS.find(m => m[0] === t)[1]; return n && epFor(t).ch.length !== n; });
+                    const ex = hit.slice(0, 3).map(t => t + ' ch1=' + (epFor(t).ch[0] || ['-'])[0]).join(' ; ');
+                    const dhm = 'matched=' + hit.length + '/' + tt.length + ' countsDiffer=' + off.length + ' [' + off.slice(0, 6).map(t => t + ':' + MAKARIOS.find(m => m[0] === t)[1] + '≠' + epFor(t).ch.length).join(', ') + '] unmatched=[' + miss.slice(0, 8).join(', ') + '] e.g. ' + ex;
+                    return ep + ' | ' + dhm + ' | after reload: localStorage=' + ls + ' indexedDB=' + (m ? m.name : 'missing') + ' | ' + document.title + ' | versions=' + Object.keys(VN).length + ' | fonts=' + (window.MAC_FONTS||[]).length + ' e.g. ' + (window.MAC_FONTS||[]).slice(0,4).join(', ');
                     """, arguments: [:], in: nil, in: .page) { r in
                     print("SELFTEST", r)
                     NSApp.terminate(nil)
@@ -230,11 +275,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
             }
         }
     }
+    /// Messages from the page: {type:'file', name, text} saves a file (a .ics opens in Calendar to add the reminder).
     func userContentController(_ c: WKUserContentController, didReceive message: WKScriptMessage) {
-        print("page:", message.body)
+        guard let m = message.body as? [String: Any], (m["type"] as? String) == "file",
+              let name = m["name"] as? String, let text = m["text"] as? String else { print("page:", message.body); return }
+        let safe = name.replacingOccurrences(of: "/", with: "-")
+        if safe.lowercased().hasSuffix(".ics") {
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("My Bible", isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let f = dir.appendingPathComponent(safe)
+            do { try text.write(to: f, atomically: true, encoding: .utf8); NSWorkspace.shared.open(f) } catch { alert("Couldn’t create the calendar file.") }
+            return
+        }
+        let panel = NSSavePanel(); panel.nameFieldStringValue = safe
+        panel.beginSheetModal(for: window) { r in if r == .OK, let u = panel.url { try? text.write(to: u, atomically: true, encoding: .utf8) } }
     }
 }
 
+setvbuf(stdout, nil, _IOLBF, 0)   // line-buffered, so test output survives the process being stopped
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate

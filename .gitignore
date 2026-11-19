@@ -1,0 +1,6 @@
+# Built output (the Mac app and the single-file build); docs/ is the published site and IS committed
+dist/
+# Ben's own Dag Heward-Mills EPUB library: copyrighted books, 200 MB. Only the derived list (src/makarios.js) is kept.
+ePUB/
+.DS_Store
+__pycache__/

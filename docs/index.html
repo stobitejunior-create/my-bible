@@ -539,7 +539,10 @@ main{display:grid;grid-template-rows:auto 1fr}
   .ref{font-size:15px;padding:5px 4px}
   .sheet.open,#pop.open,#verp.open,#navp.open,#menup.open{left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-width:none!important;max-height:86vh;overflow-y:auto;border-radius:18px 18px 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));animation:up .2s ease-out}
   #prefs .fonts{max-height:none}
-  body.sheet-open #scrim{display:block}
+  body.sheet-open #scrim{display:block;touch-action:none}
+  /* iOS passes taps and drags through a fixed sheet to the scrolling text behind it, so switch the text off while one is open */
+  body.sheet-open #scroll,body.nav-open #scroll{overflow:hidden;pointer-events:none;touch-action:none}
+  .sheet.open,#navp.open,#menup.open,#verp.open{overscroll-behavior:contain;touch-action:pan-y}
   #panel{left:0;right:0;top:auto;bottom:0;width:100%!important;max-height:70vh;border-left:0;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
   .col{padding:28px 18px 110px}
   #verses{font-size:min(var(--fs),19px)}
@@ -1181,6 +1184,12 @@ function closeSheets(except){
 }
 const closePrefs=()=>{ $('#prefs').classList.remove('open'); closeSheets(); };
 $('#scrim').onclick=()=>closeSheets();
+// Phones: while a sheet is open, a tap or drag that reaches the verses only closes the sheet; it never selects or scrolls them.
+$('#scrim').addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+['click','touchstart','touchend'].forEach(t=>$('#scroll').addEventListener(t,e=>{
+  if(!phone()||!(document.body.classList.contains('sheet-open')||document.body.classList.contains('nav-open'))) return;
+  e.preventDefault(); e.stopPropagation(); if(t==='click') closeSheets();
+},{capture:true,passive:false}));
 
 // ---------- Imported Bibles (XML) ----------
 // Saved in this browser's / the Mac app's IndexedDB: store "meta" {id,name,abbr,strongs,red,verses} and store "data" (the text).

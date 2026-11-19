@@ -295,6 +295,12 @@ function closeSheets(except){
 }
 const closePrefs=()=>{ $('#prefs').classList.remove('open'); closeSheets(); };
 $('#scrim').onclick=()=>closeSheets();
+// Phones: while a sheet is open, a tap or drag that reaches the verses only closes the sheet; it never selects or scrolls them.
+$('#scrim').addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+['click','touchstart','touchend'].forEach(t=>$('#scroll').addEventListener(t,e=>{
+  if(!phone()||!(document.body.classList.contains('sheet-open')||document.body.classList.contains('nav-open'))) return;
+  e.preventDefault(); e.stopPropagation(); if(t==='click') closeSheets();
+},{capture:true,passive:false}));
 
 // ---------- Imported Bibles (XML) ----------
 // Saved in this browser's / the Mac app's IndexedDB: store "meta" {id,name,abbr,strongs,red,verses} and store "data" (the text).

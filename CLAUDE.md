@@ -22,6 +22,13 @@ A personal Bible reader for Ben. He uses it on his Mac (Safari or Chrome) **and 
 - **Side by side.** Two versions in aligned columns. It works with God's-words mode and with Strong's.
 - **Verse panel** (click any verse). Five highlight colours, an autosaving note, copy with reference, and cross references with previews.
 - **Highlights and notes list** (bookmark icon), in Bible order, filterable by colour or "With notes".
+- **Phone = GitHub Pages (Nov 2026).** The repo is https://github.com/stobitejunior-create/my-bible. It is **public**, because Ben chose that after the free plan refused Pages on a private repo.
+  - Pages serves `main:/docs` at https://stobitejunior-create.github.io/my-bible/. `pages/make_site.py` copies `dist/bible.html` to `docs/index.html` and adds the home-screen tags: manifest, apple-touch-icon, standalone mode, noindex, and the `docs/sw.js` service worker (network-first offline cache).
+  - The phone icons are `swift mac/make_icon.swift out.png full`, sized with sips.
+  - `.gitignore` keeps out `dist/` and `ePUB/`. The EPUBs are copyrighted and 200 MB, and must never be committed.
+  - Ship everything with **`rebuild-bible ["what changed"]`** (scripts/rebuild-bible.sh, set up in ~/.zshrc). It builds, makes the site, installs the Mac app, commits and does a plain push, with no Actions.
+  - On Pages there is no claude.ai `db`, so highlights, plans and imports stay in that phone's browser. The old claude.ai artifact is no longer the phone route.
+- **Settings (Nov 2026).** The **Aa** panel has a short main page with three sections: Reading (switches), Text (Font ›, Size, Line spacing, Margins) and Page (Layout, Chapter heading ›, Appearance). Font and Chapter heading are sub-pages (`PREFPAGE`). Highlights and About live only in ☰.
 - **Reading plan (Nov 2026).** ☰ → Reading plan (Mac: Go → Reading Plan, ⇧⌘P) opens `#planp`.
   - Ben picks a start chapter, an end chapter, a finish date and optional days off. Presets: Whole Bible, Old Testament, New Testament, Here to Revelation.
   - His original request was 2 Samuel → Revelation by 31 Dec. That is 922 chapters, which gives about 22 chapters (about 1 h 8 min) a day over 42 days.

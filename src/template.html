@@ -168,6 +168,31 @@ body.nav-open .ref .cv{transform:rotate(180deg)}
 #planp .pall summary{cursor:pointer;color:var(--accent);font-size:13px;padding:10px 2px;list-style:none}
 #planp .pall summary::-webkit-details-marker{display:none}
 #menup .mi small{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Settings: sections of rows */
+#prefs .shd{display:flex;align-items:center;gap:8px;margin:0 0 4px;min-height:30px}
+#prefs .shd h3{font-size:17px;font-weight:600;flex:1}
+#prefs .sback{border:0;background:none;color:var(--accent);font-size:14px;padding:4px 6px 4px 0}
+#prefs .sg{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 4px 6px}
+#prefs .sbox{background:var(--side);border-radius:12px;overflow:hidden}
+#prefs .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;padding:6px 12px;border:0;border-bottom:.5px solid var(--line);background:none;font-size:14px;color:var(--ink);text-align:left;border-radius:0}
+#prefs .sbox>.srow:last-child{border-bottom:0}
+#prefs .srow>span:first-child,#prefs .srow .lbl{white-space:nowrap}
+#prefs .srow.nav:hover,#prefs .sbox .tg:hover{background:var(--hover)}
+#prefs .srow .sv{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13.5px;max-width:60%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#prefs .chv{width:12px;height:12px;flex:none;color:var(--faint)}
+#prefs .sbox .tg .lbl{display:inline!important}
+#prefs .sbox .tg:disabled{opacity:.4}
+#prefs .sseg{display:inline-flex;background:var(--hover);border-radius:8px;padding:2px;flex:none}
+#prefs .sseg button{border:0;background:none;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:500;color:var(--muted)}
+#prefs .sseg button.on{background:var(--segon);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.05)}
+#prefs .stpr{display:inline-flex;align-items:center;gap:10px}
+#prefs .stpr b{font-weight:500;font-variant-numeric:tabular-nums;min-width:20px;text-align:center;color:var(--muted)}
+#prefs .stpr .stp{width:34px;height:28px}
+#prefs .srow input[type=range]{width:150px;flex:none}
+#prefs .sbox.fonts{max-height:none;gap:0;padding:4px}
+#prefs #flist{max-height:300px;overflow-y:auto}
+#prefs .heads{margin-top:6px}
+#prefs .heads .ln{display:block;height:3px;border-radius:2px;background:var(--faint);opacity:.6}
 #verp{position:fixed;z-index:55;width:300px;max-width:calc(100vw - 24px);background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:8px;display:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #verp.open{display:block;animation:pin .14s ease-out}
 #verp .vr{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;padding:9px 10px;border-radius:9px}
@@ -377,6 +402,7 @@ main{display:grid;grid-template-rows:auto 1fr}
 @media (max-width:700px){
   .bar{gap:4px;padding:8px 10px}
   .edge{display:none}
+  .kbd{display:none}
   #navp.open{margin:0;max-height:92vh}
   .ref{font-size:15px;padding:5px 4px}
   .sheet.open,#pop.open,#verp.open,#navp.open,#menup.open{left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-width:none!important;max-height:86vh;overflow-y:auto;border-radius:18px 18px 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));animation:up .2s ease-out}
@@ -463,7 +489,7 @@ main{display:grid;grid-template-rows:auto 1fr}
     <li><b>ASV</b>: American Standard Version (1901), public domain. Where it prints “Jehovah”, this Bible shows “LORD”, as the KJV does.</li>
     <li><b>BLB</b>: Berean Literal Bible, the word-for-word companion to the BSB, public domain. Words in italics are supplied by the translators, “YHWH” is shown as “LORD”, and ⁺ marks a plural “you”.</li>
   </ul>
-  <p>Red letters and God’s words only are available in the KJV, BSB and WEB. Strong’s is available in the KJV and BSB: underlined words open their Hebrew or Greek entry.</p>
+  <p>Red letters and God’s words only are available in the KJV, BSB and WEB. Strong’s is available in the KJV and BSB: underlined words open their Hebrew or Greek entry. The NKJV isn’t included because it’s copyrighted; the version menu opens it, with Strong’s, on Blue Letter Bible, or you can import a copy you own (☰ → Import a Bible).</p>
   <h4>God’s words only</h4>
   <p>Shows only speech the text directly attributes to God, Jesus or the Holy Spirit, and hides the narration around it. It is built from Clear Bible’s speaker data, which marks quoted speech. In the prophets it also follows the Lord’s longer quotations across verses, using markers like “declares the LORD”, and carries these over to the KJV where the BSB and WEB agree. Passages where the prophet speaks for God without any quotation marks may still be only partly included, and a few verses with two speakers may keep a line from the other speaker.</p>
   <h4>Sources</h4>
@@ -476,7 +502,7 @@ main{display:grid;grid-template-rows:auto 1fr}
     <li>Cross references: OpenBible.info, CC BY.</li>
   </ul>
   <h4>Shortcuts</h4>
-  <p>Click a verse to highlight it, add a note, copy it or see cross references. ← → change chapter. ⌘K search. Type a reference like “Ps 23” or “1 Cor 13:4” to jump there. Esc closes panels.</p>
+  <p>Tap a verse number to highlight it, add a note, copy it or see cross references (underlined words open their Strong’s entry). Tap the title at the top, or press ⌘K, to choose a book and chapter, search, or type a reference like “Ps 23” or “1 Cor 13:4”. Change chapter with ← → or the arrows at the page edges, or swipe on a phone. The dice picks something to read; ☰ has the reading plan, highlights and Bible import. Esc closes panels.</p>
   <div style="margin-top:20px;text-align:right"><button class="pill pri" id="closeModal">Done</button></div>
 </div></div>
 <script type="application/octet-stream" id="d-kjv">__KJV__</script>

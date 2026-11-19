@@ -461,7 +461,7 @@ function fontList(){
   const q=FFIND.trim().toLowerCase(), list=(ALLFONTS||[]).filter(f=>!q||f.toLowerCase().includes(q)).slice(0,250);
   return list.length?list.map(f=>`<button data-font="f:${esc(f)}" class="${S.font==='f:'+f?'on':''}" style='font-family:"${esc(f).replace(/'/g,'')}"'>${esc(f)}</button>`).join(''):'<div style="font-size:13px;color:var(--muted);padding:6px 10px">No fonts match.</div>';
 }
-const HEADS=[['dropcap','Chapter number only'],['refined','Book over number'],['classic','Centred classic'],['line','One line'],['bookchap','Book, then chapter']];
+const HEADS=[['dropcap','Big number'],['refined','Book and number'],['classic','Centred'],['line','One line'],['bookchap','Book, chapter']];
 function headHTML(style,b,c,v){
   const name=NAMES[b], full=VFULL[v];
   if(style==='dropcap') return '';
@@ -469,42 +469,53 @@ function headHTML(style,b,c,v){
   if(style==='bookchap') return `<div class="bn">${name}</div><div class="vn">Chapter ${c} · ${VN[v]}</div>`;
   return `<div class="bn">${name}</div><div class="cn">${c}</div><div class="vn">${full}</div>`;
 }
+// Settings: a short main page in three sections, with Font and Chapter heading as their own pages.
+let PREFPAGE='main';
+const CHEV_R='<svg class="chv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 2.5 3.5 3.5-3.5 3.5"/></svg>';
 function renderPrefs(){
-  const tgl=(id,label)=>{ const t=$('#'+id); return `<button class="tg${t.classList.contains('red')?' red':''}${t.classList.contains('on')?' on':''}" data-tg="${id}" ${t.disabled?'disabled':''}><span class="lbl">${label}</span><span class="sw"></span></button>`; };
-  const pv={refined:`<div style="font-size:12px">${NAMES[S.b]}</div><div style="font-size:26px;font-weight:300">${S.c+1}</div>`,
-    classic:`<div style="font-size:8px;letter-spacing:.3em;text-transform:uppercase;text-align:center;color:var(--muted)">${NAMES[S.b]}</div><div style="font-size:26px;font-weight:300;text-align:center">${S.c+1}</div>`,
-    line:`<div style="font-size:18px;font-weight:500">${NAMES[S.b]} ${S.c+1}</div>`,
-    bookchap:`<div style="font-size:20px">${NAMES[S.b]}</div><div style="font:600 8px -apple-system,sans-serif;letter-spacing:.2em;color:var(--accent)">CHAPTER ${S.c+1}</div>`};
-  $('#prefs').innerHTML=`<div class="lb">Display</div>
-    <div class="tgl">${tgl('t-strongs','Strong’s words')}${tgl('t-red','Red letters')}${tgl('t-god','God’s words only')}</div>
-    <div class="lb">Layout</div>
-    <div class="seg">${[['verse','Verse by verse'],['para','Paragraph']].map(([k,l])=>`<button data-layout="${k}" class="${S.layout===k?'on':''}">${l}</button>`).join('')}</div>
-    <div class="lb">Chapter heading</div>
-    <div class="heads">${HEADS.map(([k,l])=>`<button data-hs="${k}" class="${S.hs===k?'on':''}"><span class="pv">${pv[k]}</span><small>${l}</small></button>`).join('')}</div>
-    <div class="lb">Font${S.font.startsWith('f:')?` · <span style="font-weight:500;color:var(--ink)">${esc(fontName(S.font))}</span>`:''}</div>
-    <div class="fonts">${FONTS.map(([k,n,st,note])=>`<button data-font="${k}" class="${S.font===k?'on':''}" style='font-family:${st}'>${n}<small>${note}</small></button>`).join('')}</div>
-    <div class="lb">${ALLFONTS?`All fonts on this ${window.MAC_APP?'Mac':'device'} (${ALLFONTS.length})`:'Other fonts'}</div>
-    ${ALLFONTS?`<input class="ffind" id="ffind" type="search" placeholder="Search fonts" value="${esc(FFIND)}" autocomplete="off"><div class="fonts" id="flist">${fontList()}</div>`
-      :`<input class="ffind" id="ffind" type="text" placeholder="Type any installed font name" value="${esc(FFIND)}" autocomplete="off"><div style="display:flex;gap:8px"><button class="pill" data-usefont style="flex:1">Use this font</button>${'queryLocalFonts' in window?'<button class="pill" data-listfonts style="flex:1">List my fonts</button>':''}</div>`}
-    <div class="lb">Margins</div>
-    <input type="range" id="mw" min="28" max="72" step="2" value="${S.mw||44}" aria-label="Text width">
-    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:2px"><span>Wide margins</span><span>Narrow margins</span></div>
-    <div class="lb">Text size</div>
-    <div class="row"><button class="stp" data-fs="-1" aria-label="Smaller text" style="font-size:12px">A</button><span class="val">${S.fs}</span><button class="stp" data-fs="1" aria-label="Larger text" style="font-size:17px">A</button></div>
-    <div class="lb">Line spacing</div>
-    <div class="seg">${Object.keys(SPACING).map(k=>`<button data-lh="${k}" class="${S.lh===k?'on':''}">${k[0].toUpperCase()+k.slice(1)}</button>`).join('')}</div>
-    <div class="sample serif" style="font-size:${Math.min(S.fs,20)}px;line-height:${SPACING[S.lh]}">In the beginning was the Word, and the Word was with God, and the Word was God.</div>
-    <div class="lb">Appearance</div>
-    <div class="seg">${[['auto','Automatic'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}">${l}</button>`).join('')}</div>
-    <div class="foot"><button class="pill" data-go-marks>Highlights and notes</button><button class="pill" data-about>About</button></div>`;
+  const el=$('#prefs');
+  const tgl=(id,label)=>{ const t=$('#'+id); return `<button class="tg srow${t.classList.contains('red')?' red':''}${t.classList.contains('on')?' on':''}" data-tg="${id}" ${t.disabled?'disabled':''} title="${esc(t.title)}"><span class="lbl">${label}</span><span class="sw"></span></button>`; };
+  const seg=(key,val,opts)=>`<span class="sseg">${opts.map(([k,l])=>`<button data-${key}="${k}" class="${val===k?'on':''}">${l}</button>`).join('')}</span>`;
+  const back=title=>`<div class="shd"><button class="sback" data-page="main">‹ Settings</button><h3>${title}</h3></div>`;
+  if(PREFPAGE==='font'){
+    el.innerHTML=back('Font')+`<div class="sbox fonts">${FONTS.map(([k,n,st,note])=>`<button data-font="${k}" class="${S.font===k?'on':''}" style='font-family:${st}'>${n}<small>${note}</small></button>`).join('')}</div>
+      <div class="sg">${ALLFONTS?`All fonts on this ${window.MAC_APP?'Mac':'device'} (${ALLFONTS.length.toLocaleString()})`:'Other fonts'}</div>
+      ${ALLFONTS?`<input class="ffind" id="ffind" type="search" placeholder="Search fonts" value="${esc(FFIND)}" autocomplete="off"><div class="sbox fonts" id="flist">${fontList()}</div>`
+        :`<input class="ffind" id="ffind" type="text" placeholder="Type any installed font name" value="${esc(FFIND)}" autocomplete="off"><div style="display:flex;gap:8px"><button class="pill" data-usefont style="flex:1">Use this font</button>${'queryLocalFonts' in window?'<button class="pill" data-listfonts style="flex:1">List my fonts</button>':''}</div>`}`;
+    return;
+  }
+  if(PREFPAGE==='heading'){
+    const pv={dropcap:`<div style="display:flex;gap:5px;align-items:flex-start"><span style="font-size:26px;font-weight:300;line-height:.9">${S.c+1}</span><span style="display:flex;flex-direction:column;gap:3px;padding-top:3px;flex:1"><i class="ln"></i><i class="ln"></i></span></div>`,
+      refined:`<div style="font-size:12px">${NAMES[S.b]}</div><div style="font-size:26px;font-weight:300">${S.c+1}</div>`,
+      classic:`<div style="font-size:8px;letter-spacing:.3em;text-transform:uppercase;text-align:center;color:var(--muted)">${NAMES[S.b]}</div><div style="font-size:26px;font-weight:300;text-align:center">${S.c+1}</div>`,
+      line:`<div style="font-size:18px;font-weight:500">${NAMES[S.b]} ${S.c+1}</div>`,
+      bookchap:`<div style="font-size:20px">${NAMES[S.b]}</div><div style="font:600 8px -apple-system,sans-serif;letter-spacing:.2em;color:var(--accent)">CHAPTER ${S.c+1}</div>`};
+    el.innerHTML=back('Chapter heading')+`<div class="heads">${HEADS.map(([k,l])=>`<button data-hs="${k}" class="${S.hs===k?'on':''}"><span class="pv">${pv[k]}</span><small>${l}</small></button>`).join('')}</div>`;
+    return;
+  }
+  el.innerHTML=`<div class="shd"><h3>Settings</h3></div>
+    <div class="sg">Reading</div>
+    <div class="sbox">${tgl('t-strongs','Strong’s words')}${tgl('t-red','Red letters')}${tgl('t-god','God’s words only')}</div>
+    <div class="sg">Text</div>
+    <div class="sbox">
+      <button class="srow nav" data-page="font"><span>Font</span><span class="sv">${esc(fontName(S.font))}${CHEV_R}</span></button>
+      <div class="srow"><span>Size</span><span class="stpr"><button class="stp" data-fs="-1" aria-label="Smaller text" style="font-size:12px">A</button><b>${S.fs}</b><button class="stp" data-fs="1" aria-label="Larger text" style="font-size:16px">A</button></span></div>
+      <div class="srow"><span>Line spacing</span>${seg('lh',S.lh,[['compact','Tight'],['normal','Normal'],['relaxed','Loose']])}</div>
+      <div class="srow"><span>Margins</span><input type="range" id="mw" min="28" max="72" step="2" value="${S.mw||44}" aria-label="Text width: left is wider margins"></div>
+    </div>
+    <div class="sg">Page</div>
+    <div class="sbox">
+      <div class="srow"><span>Layout</span>${seg('layout',S.layout,[['verse','Verses'],['para','Paragraph']])}</div>
+      <button class="srow nav" data-page="heading"><span>Chapter heading</span><span class="sv">${(HEADS.find(h=>h[0]===S.hs)||HEADS[0])[1]}${CHEV_R}</span></button>
+      <div class="srow"><span>Appearance</span>${seg('theme',S.theme,[['auto','Auto'],['light','Light'],['dark','Dark']])}</div>
+    </div>`;
 }
-$('#gear').onclick=()=>{ if($('#prefs').classList.contains('open')) return closePrefs(); renderPrefs(); openSheet($('#prefs'),$('#gear')); };
+$('#gear').onclick=()=>{ if($('#prefs').classList.contains('open')) return closePrefs(); PREFPAGE='main'; renderPrefs(); openSheet($('#prefs'),$('#gear')); };
 $('#prefs').onclick=async e=>{
   e.stopPropagation(); // the panel redraws, so the outside-click check must not see this click
   const b=e.target.closest('button'); if(!b||b.disabled) return;
-  const keep=()=>{ const f=$('#prefs .fonts'), sc=f?f.scrollTop:0, fl=$('#flist'), fs=fl?fl.scrollTop:0, top=$('#prefs').scrollTop; renderPrefs(); const f2=$('#prefs .fonts'); if(f2) f2.scrollTop=sc; if($('#flist')) $('#flist').scrollTop=fs; $('#prefs').scrollTop=top; };
-  if('goMarks' in b.dataset){ closeSheets(); showMarks('all'); return; }
-  if('about' in b.dataset){ closeSheets(); $('#modal').classList.add('open'); return; }
+  const keep=()=>{ const fl=$('#flist'), fs=fl?fl.scrollTop:0, top=$('#prefs').scrollTop; renderPrefs(); if($('#flist')) $('#flist').scrollTop=fs; $('#prefs').scrollTop=top; };
+  if(b.dataset.page){ PREFPAGE=b.dataset.page; renderPrefs(); $('#prefs').scrollTop=0; return; }
   if(b.dataset.theme){ S.theme=b.dataset.theme; }
   if(b.dataset.layout){ S.layout=b.dataset.layout; save(); if(!searchMode) draw(firstVisibleVerse()>1?firstVisibleVerse():0); }
   if(b.dataset.tg){ $('#'+b.dataset.tg).click(); setTimeout(keep,50); return; }
@@ -699,7 +710,7 @@ $('#q').addEventListener('keydown',e=>{
 });
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); openNav(true); return;}
-  if(e.target.matches('input,textarea')) return;
+  if(e.target.matches&&e.target.matches('input,textarea,select')) return;
   if(e.key==='Escape'){ closePop(); closeSheets(); $('#modal').classList.remove('open'); if($('#bodyg').classList.contains('withpanel')) closePanel(); else if(searchMode) draw(); }
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   if(e.key==='ArrowRight') $('#next').click();

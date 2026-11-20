@@ -455,7 +455,8 @@ window.importXMLText=async(text,name)=>{ PENDING=parseBibleFile(text,name); rend
 async function saveImport(name,abbr){
   const P=PENDING; if(!P) return;
   abbr=(abbr||P.abbr).trim().toUpperCase().slice(0,8)||'XML'; while(Object.values(VN).includes(abbr)) abbr+='2';
-  const m={id:'x_'+Date.now().toString(36),name:(name||P.name).trim()||abbr,abbr,strongs:P.strongs,red:P.red,verses:P.verses};
+  if(!P.red&&P.data.length===66){ toast('Adding red letters and God’s words…'); if(await addMarks(P.data)) P.red=true; }
+  const m={id:'x_'+Date.now().toString(36),name:(name||P.name).trim()||abbr,abbr,strongs:P.strongs,red:P.red,verses:P.verses,marksTried:1};
   try{ await idb('data','put',[m.id,P.data]); await idb('meta','put',m); }
   catch(e){ return toast('Couldn’t save the Bible here: '+(e.message||e)); }
   DATA[m.id]=P.data; IMPORTS.push(m); registerImport(m); PENDING=null; closeSheets();

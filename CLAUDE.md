@@ -260,3 +260,7 @@ Settings → This device shows the offline state and a Check for updates button 
 They follow the user privately through Sync: `uploadImports()` writes `bx-<id>-<n>` rows (chapters, ≤110 KB each) then
 `bm-<id>` (meta + part count); other devices get `bm-` in the normal pull (which skips `bx-`) and `downloadImports()` fetches
 the parts. `BIBUP` marks ids already uploaded/received; `BIBIN` (persisted) retries incomplete downloads.
+Imported Bibles without marks get red letters/God's words from the KJV (`addMarks` → `markVerse` in extras.js): per verse, an
+LCS word alignment (archaic words and -eth/-s evened out) copies each KJV word's mark; unaligned words split at the import's
+quotation marks. On Ben's NKJV: 7,215/7,215 KJV-marked verses marked, 0 extra, ~0.2 s. Runs on import, and once
+(`fixImportMarks`, `m.marksTried`) for Bibles imported before.

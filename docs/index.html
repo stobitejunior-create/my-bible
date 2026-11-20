@@ -1384,7 +1384,8 @@ window.importXMLText=async(text,name)=>{ PENDING=parseBibleFile(text,name); rend
 async function saveImport(name,abbr){
   const P=PENDING; if(!P) return;
   abbr=(abbr||P.abbr).trim().toUpperCase().slice(0,8)||'XML'; while(Object.values(VN).includes(abbr)) abbr+='2';
-  const m={id:'x_'+Date.now().toString(36),name:(name||P.name).trim()||abbr,abbr,strongs:P.strongs,red:P.red,verses:P.verses};
+  if(!P.red&&P.data.length===66){ toast('Adding red letters and God’s words…'); if(await addMarks(P.data)) P.red=true; }
+  const m={id:'x_'+Date.now().toString(36),name:(name||P.name).trim()||abbr,abbr,strongs:P.strongs,red:P.red,verses:P.verses,marksTried:1};
   try{ await idb('data','put',[m.id,P.data]); await idb('meta','put',m); }
   catch(e){ return toast('Couldn’t save the Bible here: '+(e.message||e)); }
   DATA[m.id]=P.data; IMPORTS.push(m); registerImport(m); PENDING=null; closeSheets();
@@ -2619,6 +2620,7 @@ async function downloadImports(){
     await idb('data','put',[id,data]); await idb('meta','put',m);
     DATA[id]=data; IMPORTS.push(m); registerImport(m); BIBUP[id]=1; store.set('bibup',BIBUP);
     toast(`Added ${abbr} from your other device`);
+    if(!m.red) setTimeout(()=>fixImportMarks().catch(()=>{}),500);
     if(typeof renderVer==='function'&&$('#verp').classList.contains('open')) renderVer();
   }
   BIBIN=later; store.set('bibin',BIBIN);
@@ -2628,6 +2630,89 @@ async function forgetImportRemote(id){
   delete BIBUP[id]; store.set('bibup',BIBUP);
   try{ await sbRest('DELETE',`bible_docs?id=like.${encodeURIComponent('bx-'+id+'-*')}`); await sbRest('DELETE',`bible_docs?id=eq.${encodeURIComponent('bm-'+id)}`); }catch(e){}
 }
+
+// ---------- Red letters and God's words for imported Bibles ----------
+// Files like an NKJV export are plain text, with nothing saying who is speaking. The KJV here is marked ({…} Jesus,
+// «…» God), and modern versions follow its verses closely, so each verse's marks are carried across: the two verses
+// are lined up word by word (longest common subsequence, after evening out thee/you, -eth/-s and so on), each word of
+// the import takes the mark of the KJV word it lines up with, and words that don't line up are split at the import's
+// own quotation marks (“Most assuredly, I say to you…”) or, failing that, join the speech. Verses with no marks in the
+// KJV are left alone.
+const ARCH={unto:'to',thee:'you',thou:'you',ye:'you',thy:'your',thine:'your',hath:'has',doth:'does',saith:'says',shalt:'shall',wilt:'will',art:'are',hast:'have',spake:'spoke',whosoever:'whoever'};
+function mwNorm(w){ w=w.toLowerCase().replace(/[’']/g,''); w=ARCH[w]||w; return w.length>4?w.replace(/(eth|est|ed|s)$/,''):w; }
+function kjvTokens(s){
+  const out=[]; let st=0, i=0;
+  while(i<s.length){
+    const ch=s[i];
+    if(ch==='{'){ st=1; i++; continue; } if(ch==='}'||ch==='»'){ st=0; i++; continue; } if(ch==='«'){ st=2; i++; continue; }
+    if(ch==='['){ const e=s[i+1]==='['?s.indexOf(']]',i)+2:s.indexOf(']',i)+1; i=e>0?e:s.length; continue; }
+    if(ch==='<'){ const e=s.indexOf('>',i)+1; i=e>0?e:s.length; continue; }
+    if(/[A-Za-z0-9’']/.test(ch)){ let j=i; while(j<s.length&&/[A-Za-z0-9’']/.test(s[j])) j++; out.push({w:mwNorm(s.slice(i,j)),st}); i=j; continue; }
+    i++;
+  }
+  return out;
+}
+function markVerse(text,kv){
+  if(!text||!kv||!/[{«]/.test(kv)||/[{«]/.test(text)) return null;
+  const K=kjvTokens(kv); if(!K.length) return null;
+  const T=[]; text.replace(/[A-Za-z0-9’']+/g,(m,a)=>{ T.push({w:mwNorm(m),a,b:a+m.length}); return m; });
+  const n=T.length, m=K.length; if(!n) return null;
+  // longest common subsequence
+  const L=new Uint16Array((n+1)*(m+1)), W=m+1;
+  for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--) L[i*W+j]=T[i].w===K[j].w?L[(i+1)*W+j+1]+1:Math.max(L[(i+1)*W+j],L[i*W+j+1]);
+  const st=new Array(n).fill(-1), km=new Array(n).fill(-1);
+  for(let i=0,j=0;i<n&&j<m;){ if(T[i].w===K[j].w){ st[i]=K[j].st; km[i]=j; i++; j++; } else if(L[(i+1)*W+j]>=L[i*W+j+1]) i++; else j++; }
+  // fill words that didn't line up
+  const isQ=c=>/[“”"‘]/.test(c);
+  for(let i=0;i<n;){
+    if(st[i]>=0){ i++; continue; }
+    let j=i; while(j<n&&st[j]<0) j++;
+    const sl=i>0?st[i-1]:K[0].st, sr=j<n?st[j]:K[m-1].st;
+    // a short saying reworded completely ("All hail" → "Rejoice!"): the KJV words in between are marked, so mark the quote
+    const kl=i>0?km[i-1]:-1, kr=j<n?km[j]:m; let s2=0; for(let k=kl+1;k<kr;k++) if(K[k].st&&K[k].st!==sl){ s2=K[k].st; break; }
+    const from0=i>0?T[i-1].b:0, to0=j<n?T[j].a:text.length, seg=text.slice(from0,to0), q1=seg.search(/[“"‘]/), q2=Math.max(seg.lastIndexOf('”'),seg.lastIndexOf('"'),seg.lastIndexOf('’'));
+    if(sl===sr&&s2&&q1>=0&&q2>q1){ for(let k=i;k<j;k++){ const a=T[k].a-from0; st[k]=a>q1&&a<q2?s2:sl; } }
+    else if(sl===sr){ for(let k=i;k<j;k++) st[k]=sl; }
+    else{
+      const from=i>0?T[i-1].b:0, to=j<n?T[j].a:text.length; let q=-1;
+      for(let p=from;p<to;p++) if(isQ(text[p])){ q=p; if(sr!==0) break; }   // opening quote: first one; closing: last one
+      for(let k=i;k<j;k++) st[k]=q>=0?(T[k].a<q?sl:sr):(sl&&!sr?sl:sr);
+    }
+    i=j;
+  }
+  if(!st.some(x=>x>0)) return null;
+  let out='', pos=0;
+  for(let i=0;i<n;){
+    if(!st[i]){ i++; continue; }
+    let j=i; while(j+1<n&&st[j+1]===st[i]) j++;
+    let end=T[j].b; while(end<text.length&&/[.,;:!?—–-]/.test(text[end])) end++;
+    const [o,c]=st[i]===1?['{','}']:['«','»'];
+    out+=text.slice(pos,T[i].a)+o+text.slice(T[i].a,end)+c; pos=end; i=j+1;
+  }
+  return out+text.slice(pos);
+}
+async function addMarks(data){
+  const K=await load('kjv'); let n=0, count=0;
+  for(let b=0;b<66&&b<data.length;b++) for(let c=0;c<data[b].length;c++){
+    const kc=K[b]&&K[b][c]; if(!kc) continue;
+    for(let v=0;v<data[b][c].length;v++){ const r=markVerse(data[b][c][v],kc[v]); if(r){ data[b][c][v]=r; n++; } }
+    if(++count%60===0) await new Promise(r=>setTimeout(r));      // keep the phone responsive
+  }
+  return n;
+}
+// Bibles imported before this existed get their marks once, in the background.
+async function fixImportMarks(){
+  for(const m of IMPORTS.slice()){
+    if(m.red||m.marksTried) continue;
+    const data=await load(m.id); if(!data) continue;
+    const n=await addMarks(data); m.marksTried=1;
+    if(n){ m.red=true; MARKED.add(m.id); await idb('data','put',[m.id,data]); }
+    await idb('meta','put',m);
+    if(n&&(S.v===m.id||S.v2===m.id)){ syncControls(); if(!searchMode) draw(firstVisibleVerse()>1?firstVisibleVerse():0); }
+    if(n) toast(`Red letters and God’s words added to ${m.abbr}`);
+  }
+}
+setTimeout(()=>fixImportMarks().catch(()=>{}),2500);
 
 </script>
 </body>

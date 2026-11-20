@@ -211,7 +211,7 @@ function draw(flashV){
   if(nx) h+=`<button class="pill pri" data-go="${nx}">${NAMES[nx[0]]} ${nx[1]+1} ›</button>`;
   h+=planBtn();
   h+='</div>';
-  $('#col').innerHTML=h; $('#col').classList.toggle('wide',!!par); $('#col').classList.toggle('flow',flow); $('#col').classList.remove('onev'); buildBooks(); syncControls(); save(); histRecord();
+  $('#col').innerHTML=h; $('#col').classList.toggle('wide',!!par); $('#col').classList.toggle('flow',flow); $('#col').classList.remove('onev'); buildBooks(); syncControls(); save(); histRecord(); paintWords();
   if(flashV){const el=document.getElementById('v'+flashV); if(el){el.scrollIntoView({block:'center'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1400);}}
   else $('#scroll').scrollTop=0;
 }
@@ -238,7 +238,7 @@ function drawOne(ch,o,G,flashV){
       ${p===L.length-1&&planBtn()?`<div class="next">${planBtn()}</div>`:''}
     </div>`;
   }
-  $('#col').innerHTML=h; $('#col').classList.remove('wide','flow'); $('#col').classList.add('onev'); buildBooks(); syncControls(); save(); histRecord(); $('#scroll').scrollTop=0;
+  $('#col').innerHTML=h; $('#col').classList.remove('wide','flow'); $('#col').classList.add('onev'); buildBooks(); syncControls(); save(); histRecord(); $('#scroll').scrollTop=0; paintWords();
 }
 function stepVerse(d){
   const G=godOn(), wasOpen=$('#bodyg').classList.contains('withpanel'), L=oneList(DATA[S.v][S.b][S.c]||[],G), p=L.indexOf(ONE);
@@ -278,7 +278,7 @@ $('#ver').onclick=async e=>{
   const v=b.dataset.v; document.body.style.cursor='progress'; await load(v); document.body.style.cursor='';
   const top=firstVisibleVerse(); if(S.v2===v) S.v2=S.v; S.v=v; if(S.par) await load(S.v2); searchMode?rerunSearch():draw(top>1?top:0);
 };
-function firstVisibleVerse(){const vs=[...document.querySelectorAll('.v')]; const t=$('#scroll').getBoundingClientRect().top+60; const el=vs.find(x=>x.getBoundingClientRect().bottom>t); return el?+el.id.slice(1):0;}
+function firstVisibleVerse(){const vs=[...document.querySelectorAll('.v')]; const t=Math.max($('#scroll').getBoundingClientRect().top,$('#bar').getBoundingClientRect().bottom)+40; const el=vs.find(x=>x.getBoundingClientRect().bottom>t); return el?+el.id.slice(1):0;}
 $('#t-strongs').onclick=()=>{S.strongs=!S.strongs; const t=firstVisibleVerse(); searchMode?rerunSearch():draw(t>1?t:0);};
 $('#t-red').onclick=()=>{S.red=!S.red; syncControls(); save();};
 $('#t-god').onclick=()=>{S.god=!S.god; searchMode?rerunSearch():draw();};
@@ -320,10 +320,20 @@ const OVER='.sheet.open,#menup.open,#verp.open,#navp.open,#planp.open,#syncp.ope
     e.preventDefault();
   },{passive:false,capture:true});
 }
-['click','touchstart','touchend'].forEach(t=>$('#scroll').addEventListener(t,e=>{
-  if(!phone()||!(document.body.classList.contains('sheet-open')||document.body.classList.contains('nav-open'))) return;
-  e.preventDefault(); e.stopPropagation(); if(t==='click') closeSheets();
-},{capture:true,passive:false}));
+// Every device (iPad and Mac too): a tap or drag outside an open sheet or menu only closes it. The whole gesture is
+// swallowed, so the verse, link or button under your finger never reacts. The toolbar buttons still work (Aa toggles).
+{ let eat=false;
+  const outside=t=>!!document.querySelector(OVER)&&!(t&&t.closest&&(t.closest(OVER)||t.closest('#bar')||t.closest('#toast')));
+  addEventListener('pointerdown',e=>{
+    eat=outside(e.target); if(!eat) return;
+    e.preventDefault(); e.stopPropagation(); closeSheets();
+  },{capture:true,passive:false});
+  ['mousedown','mouseup','touchstart','touchmove','touchend','click','dblclick','contextmenu'].forEach(t=>addEventListener(t,e=>{
+    if(!eat) return;
+    if(e.cancelable) e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    if(t==='click'||t==='dblclick') setTimeout(()=>{ eat=false; },0);
+  },{capture:true,passive:false}));
+}
 
 // ---------- Imported Bibles (XML) ----------
 // Saved in this browser's / the Mac app's IndexedDB: store "meta" {id,name,abbr,strongs,red,verses} and store "data" (the text).
@@ -743,11 +753,20 @@ function applyTheme(){
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applyTheme());
 // The toolbar slides away while reading down the page and returns when scrolling up.
-{ let last=0; $('#scroll').addEventListener('scroll',()=>{
-    const y=$('#scroll').scrollTop, bar=$('#bar'), d=y-last; last=y;
-    if(document.querySelector('.sheet.open')||y<60) return bar.style.marginTop='0px';
-    if(d>6) bar.style.marginTop=-bar.offsetHeight+'px'; else if(d<-6) bar.style.marginTop='0px';
-  },{passive:true}); }
+// The bar floats over the text and moves with a transform, so nothing re-lays out while scrolling. The rubber-band
+// bounce at the top and the end of a chapter is ignored, so the bar no longer flickers in and out down there.
+{ const sc=$('#scroll'), bar=$('#bar'); let last=0, ticking=false;
+  const setH=()=>document.documentElement.style.setProperty('--barh',bar.offsetHeight+'px');
+  setH(); if(window.ResizeObserver) new ResizeObserver(setH).observe(bar); else addEventListener('resize',setH);
+  const upd=()=>{ ticking=false;
+    const y=sc.scrollTop, max=sc.scrollHeight-sc.clientHeight;
+    if(document.querySelector('.sheet.open')||y<60){ bar.classList.remove('away'); last=Math.max(0,y); return; }
+    if(y<0||y>max-2){ last=Math.min(Math.max(y,0),max); return; }     // bouncing at an end: leave the bar as it is
+    const d=y-last;
+    if(d>8){ bar.classList.add('away'); last=y; } else if(d<-14){ bar.classList.remove('away'); last=y; }
+    else if((d>0&&bar.classList.contains('away'))||(d<0&&!bar.classList.contains('away'))) last=y;
+  };
+  sc.addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(upd); } },{passive:true}); }
 $('#info').onclick=()=>$('#modal').classList.add('open');
 $('#closeModal').onclick=()=>$('#modal').classList.remove('open');
 $('#modal').onclick=e=>{if(e.target.id==='modal') $('#modal').classList.remove('open');};
@@ -859,7 +878,11 @@ function seg2(){ return '<span class="seg sm">'+Object.keys(VN).filter(v=>v!==S.
 $('#t-par').onclick=async()=>{ S.par=!S.par; if(S.par){ if(S.v2===S.v) S.v2=Object.keys(VN).find(v=>v!==S.v); await load(S.v2);} const t=firstVisibleVerse(); searchMode?rerunSearch():draw(t>1?t:0); };
 
 // ---------- Highlights & notes ----------
-const COLORS=[['y','Yellow','#ffd60a'],['g','Green','#34c759'],['b','Blue','#0a84ff'],['p','Pink','#ff375f'],['v','Purple','#af52de']];
+const COLORS=[['y','Yellow','#ffd60a'],['o','Orange','#ff9f0a'],['r','Red','#ff453a'],['p','Pink','#ff375f'],['v','Purple','#af52de'],
+  ['i','Indigo','#5e5ce6'],['b','Blue','#0a84ff'],['t','Teal','#30b0c7'],['g','Green','#34c759'],['n','Brown','#a2845e'],['k','Grey','#8e8e93']];
+{ const st=document.createElement('style');   // one rule per colour, for verses, one-verse view, the highlights list and single words
+  st.textContent=COLORS.map(([k])=>`.v.c-${k}>.t,.one .ov.c-${k} .t,.res.c-${k} .rt,.hw.c-${k}{background:var(--h${k})}`).join('');
+  document.head.appendChild(st); }
 const mkey=(b,c,v)=>`m-${b}.${c}.${v}`;
 let MARKS={}, MSTORE=null;
 function localMarks(){ return store.get('marks',{}); }
@@ -872,6 +895,7 @@ function applyMarks(){
     const nn=el.querySelector('.n'); const dot=nn.querySelector('.nd');
     if(mk&&mk.note&&!dot) nn.insertAdjacentHTML('beforeend','<i class="nd" title="Has a note"></i>'); else if(!(mk&&mk.note)&&dot) dot.remove();
   });
+  paintWords();
 }
 async function initMarks(){
   MARKS=localMarks(); applyMarks();
@@ -892,7 +916,8 @@ async function initMarks(){
 }
 async function setMark(b,c,v,patch){
   const k=mkey(b,c,v); const cur={b,c,v,color:'',note:'',...(MARKS[k]||{}),...patch,t:Date.now()};
-  const empty=!cur.color&&!cur.note.trim();
+  if(cur.words&&!cur.words.length) delete cur.words;
+  const empty=!cur.color&&!cur.note.trim()&&!cur.words;
   if(empty) delete MARKS[k]; else MARKS[k]=cur;
   applyMarks();
   if(MSTORE){ try{ empty?await MSTORE.doc(k).delete():await MSTORE.doc(k).set(cur); return true; }catch(e){ toast('Couldn’t save. Check your connection and try again.'); return false; } }
@@ -900,13 +925,14 @@ async function setMark(b,c,v,patch){
 }
 function showMarks(f){
   f=f||'all'; searchMode={type:'m',f}; closePanel(false);
-  const list=Object.values(MARKS).filter(m=>f==='all'||(f==='note'?m.note:m.color===f)).sort((a,b)=>a.b-b.b||a.c-b.c||a.v-b.v);
+  const list=Object.values(MARKS).filter(m=>f==='all'||(f==='note'?m.note:(m.color===f||(m.words||[]).some(w=>w.c===f)))).sort((a,b)=>a.b-b.b||a.c-b.c||a.v-b.v);
   const o={...opts(),god:false};
   const pills=[['all','All',''],...COLORS.map(c=>[c[0],c[1],c[2]]),['note','With notes','']].map(([k,l,col])=>`<button data-fc="${k}" class="${f===k?'on':''}">${col?`<i style="background:${col}"></i>`:''}${l}</button>`).join('');
   const rows=list.map(m=>{ const s=(DATA[S.v][m.b]||[])[m.c-1]?.[m.v-1]||''; const r=render(s,o);
-    return `<div class="res${m.color?' c-'+m.color:''}" data-b="${m.b}" data-c="${m.c-1}" data-v="${m.v-1}"><div class="rr">${NAMES[m.b]} ${m.c}:${m.v}</div><div class="rt"><span class="${''}">${r.html}</span></div>${m.note?`<div class="nt">${esc(m.note)}</div>`:''}</div>`;}).join('');
+    return `<div class="res${m.color?' c-'+m.color:''}" data-mk="${mkey(m.b,m.c,m.v)}" data-b="${m.b}" data-c="${m.c-1}" data-v="${m.v-1}"><div class="rr">${NAMES[m.b]} ${m.c}:${m.v}</div><div class="rt"><span class="${''}">${r.html}</span></div>${m.note?`<div class="nt">${esc(m.note)}</div>`:''}</div>`;}).join('');
   $('#col').classList.remove('wide');
   $('#col').innerHTML=header('Highlights and notes', list.length?`${list.length} ${list.length===1?'verse':'verses'}. Tap one to open it.`:(Object.keys(MARKS).length?'Nothing matches this filter.':'Click any verse while reading to highlight it or add a note.'))+`<div class="fl">${pills}</div>`+rows;
+  document.querySelectorAll('#col .res[data-mk]').forEach(el=>{ const m=MARKS[el.dataset.mk]; if(m&&m.words) wordsApply(el.querySelector('.rt'),m.words); });
   $('#reft').textContent='Highlights and notes'; $('#scroll').scrollTop=0; buildBooks(); syncControls();
 }
 $('#marks').onclick=()=>showMarks('all');
@@ -927,6 +953,7 @@ async function openPanel(n){
     <div class="vt serif">${esc(txt)}</div>
     <div class="lb">Highlight</div>
     <div class="sw6">${COLORS.map(([k,l,col])=>`<button data-col="${k}" title="${l}" aria-label="${l}" style="background:${col}" class="${mk.color===k?'on':''}"></button>`).join('')}<button class="x${!mk.color?' on':''}" data-col="" title="No highlight" aria-label="No highlight">✕</button></div>
+    <div id="wchips">${wordChips(mk)}</div>
     <div class="lb">Note</div>
     <textarea id="note" placeholder="Write a note on this verse">${esc(mk.note||'')}</textarea>
     <div class="saved" id="saved"></div>
@@ -937,6 +964,7 @@ async function openPanel(n){
     <div id="xr"><span style="font-size:13px;color:var(--muted)">Loading…</span></div>
   </div>`;
   $('#pclose').onclick=()=>closePanel();
+  $('#wchips').onclick=async e=>{ const x=e.target.closest('[data-wdel]'); if(!x) return; const m=MARKS[mkey(b,c,n)]||{}; const w=(m.words||[]).slice(); w.splice(+x.dataset.wdel,1); await setMark(b,c,n,{words:w}); $('#wchips').innerHTML=wordChips(MARKS[mkey(b,c,n)]||{}); };
   p.querySelectorAll('[data-col]').forEach(bt=>bt.onclick=async()=>{ await setMark(b,c,n,{color:bt.dataset.col}); p.querySelectorAll('[data-col]').forEach(x=>x.classList.toggle('on',x===bt)); });
   $('#note').oninput=e=>{ clearTimeout(noteTimer); $('#saved').textContent=''; const val=e.target.value; noteTimer=setTimeout(async()=>{ if(await setMark(b,c,n,{note:val})) $('#saved').textContent='Saved'; },600); };
   $('#copyv').onclick=()=>copyText(`“${txt}” ${NAMES[b]} ${c}:${n} (${VN[S.v]})`);

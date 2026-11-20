@@ -597,7 +597,7 @@ function turn(dir,fn,fromDx){
   const ov=document.createElement('div'); ov.className='turnov';
   ov.style.cssText=`left:${r.left}px;top:${r.top}px;width:${W}px;height:${r.height}px`;
   const cl=$('#col').cloneNode(true);   // ids kept so the copy is styled the same; it sits after the real page, so lookups still find the real one
-  cl.style.transform=`translateY(${-sc.scrollTop}px)`; ov.appendChild(cl); document.body.appendChild(ov);
+  cl.style.transform=`translateY(${(parseFloat(getComputedStyle(sc).paddingTop)||0)-sc.scrollTop}px)`; ov.appendChild(cl); document.body.appendChild(ov);
   sc.style.transform=''; fn();
   const ease='cubic-bezier(.22,.8,.24,1)', T=style==='book'?520:style==='fade'?260:340, o={duration:T,easing:ease,fill:'both'};
   const s=dir>0?1:-1; let a1, a2;
@@ -657,3 +657,82 @@ function statusColor(){
   const m=document.createElement('meta'); m.name='theme-color'; m.content=rgb; document.head.appendChild(m);
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>setTimeout(statusColor,50));
+
+
+// ---------- Highlighting single words ----------
+// Select words in a verse (long-press and drag on a phone, drag with the mouse on a Mac) and a row of colours appears.
+// A word highlight is saved on the verse's mark as {q: the words, i: which occurrence in the verse, c: colour}, so it
+// follows the words, not character positions, and still lands on the same words in other versions that use them.
+function verseText(t){ let s=''; const w=document.createTreeWalker(t,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest('.dc,.nd')?2:1}); while(w.nextNode()) s+=w.currentNode.data; return s; }
+function nthIndex(txt,q,i){ let at=-1; for(let k=0;k<=i;k++){ at=txt.indexOf(q,at+1); if(at<0) return -1; } return at; }
+function wordsApply(t,words){
+  if(!t) return;
+  if(t.querySelector('.hw')){ t.querySelectorAll('.hw').forEach(x=>x.replaceWith(...x.childNodes)); t.normalize(); }
+  (words||[]).forEach(w=>{
+    const start=nthIndex(verseText(t),w.q,w.i); if(start<0) return; const end=start+w.q.length;
+    const nodes=[]; let pos=0; const tw=document.createTreeWalker(t,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest('.dc,.nd')?2:1});
+    while(tw.nextNode()){ const n=tw.currentNode, a=pos, b=pos+n.data.length; pos=b; if(b>start&&a<end) nodes.push([n,Math.max(0,start-a),Math.min(n.data.length,end-a)]); }
+    nodes.forEach(([n,a,b])=>{ if(b<=a) return; let m=n; if(a>0) m=m.splitText(a); if(b-a<m.data.length) m.splitText(b-a);
+      const sp=document.createElement('span'); sp.className='hw c-'+w.c; m.replaceWith(sp); sp.appendChild(m); });
+  });
+}
+function paintWords(){
+  document.querySelectorAll('#col .v[data-n],#col .ov[data-n]').forEach(el=>{
+    const m=MARKS[mkey(S.b,S.c+1,+el.dataset.n)], ws=m&&m.words;
+    if(!ws&&!el.querySelector('.hw')) return;
+    el.querySelectorAll(':scope>.t,.t').forEach(t=>wordsApply(t,ws));
+  });
+}
+function wordChips(mk){
+  const ws=mk&&mk.words||[]; const col=k=>(COLORS.find(c=>c[0]===k)||[])[2]||'#ccc';
+  return ws.length?`<div class="lb">Highlighted words</div><div class="wch">${ws.map((w,j)=>`<span class="hw c-${w.c}">${esc(w.q.length>40?w.q.slice(0,38)+'…':w.q)}<button data-wdel="${j}" title="Remove" aria-label="Remove this highlight">✕</button></span>`).join('')}</div>`
+    :'<div class="hint">Tip: select words in the verse to highlight just those words.</div>';
+}
+var WSEL=null;
+{
+  const pal=$('#wpal'); let hideT=0, down=false;
+  pal.innerHTML='<span class="wl">Highlight</span>'+COLORS.map(([k,l,col])=>`<button data-wc="${k}" title="${l}" aria-label="${l}" style="background:${col}"></button>`).join('')+'<button class="x" data-wc="" title="Remove highlight" aria-label="Remove highlight">✕</button>';
+  const hide=()=>{ pal.classList.remove('open'); WSEL=null; };
+  // work out which verse and which words are selected
+  const read=()=>{
+    const sel=getSelection(); if(!sel||sel.isCollapsed||!sel.rangeCount||searchMode) return null;
+    const r=sel.getRangeAt(0); const el=n=>n&&(n.nodeType===1?n:n.parentElement);
+    const t=el(r.startContainer)&&el(r.startContainer).closest('#col .t'); if(!t) return null;
+    const v=t.closest('.v[data-n],.ov[data-n]'); if(!v) return null;
+    const rr=r.cloneRange(); if(!t.contains(r.endContainer)) rr.setEnd(t,t.childNodes.length);   // keep it inside this verse
+    const pre=document.createRange(); pre.setStart(t,0); pre.setEnd(rr.startContainer,rr.startOffset);
+    const txt=f=>{ const d=document.createElement('div'); d.appendChild(f); d.querySelectorAll('.dc,.nd').forEach(x=>x.remove()); return d.textContent; };
+    let start=txt(pre.cloneContents()).length, q=txt(rr.cloneContents());
+    const lead=q.length-q.replace(/^\s+/,'').length; start+=lead; q=q.trim(); if(!q) return null;
+    const full=verseText(t); let i=0, at=-1; while((at=full.indexOf(q,at+1))>=0&&at<start) i++;
+    if(full.substr(start,q.length)!==q) return null;
+    return {b:S.b,c:S.c+1,v:+v.dataset.n,q,i,rect:rr.getBoundingClientRect()};
+  };
+  const place=x=>{
+    pal.classList.add('open'); const w=pal.offsetWidth, h=pal.offsetHeight, R=x.rect;
+    let top=R.bottom+12; if(top+h>innerHeight-12) top=Math.max(12,R.top-h-58);   // below the words; iOS puts Copy above
+    pal.style.top=top+'px'; pal.style.left=Math.max(10,Math.min(innerWidth-w-10,R.left+R.width/2-w/2))+'px';
+  };
+  document.addEventListener('selectionchange',()=>{
+    clearTimeout(hideT);
+    const x=read();
+    if(x){ WSEL=x; clearTimeout(place.t); place.t=setTimeout(()=>{ if(WSEL===x) place(x); },120); }
+    else if(!down) hideT=setTimeout(hide,350);
+  });
+  pal.addEventListener('pointerdown',e=>{ down=true; e.preventDefault(); },{passive:false});   // keep the selection while tapping a colour
+  addEventListener('pointerup',()=>setTimeout(()=>{ down=false; },400));
+  pal.addEventListener('click',async e=>{
+    const bt=e.target.closest('[data-wc]'); const x=WSEL; if(!bt||!x) return;
+    const m=MARKS[mkey(x.b,x.c,x.v)]||{}; let ws=(m.words||[]).slice();
+    const t=document.querySelector(`#col [data-n="${x.v}"] .t`), full=t?verseText(t):'';
+    const span=w=>{ const a=nthIndex(full,w.q,w.i); return [a,a+w.q.length]; };
+    const [a,b]=span(x);
+    ws=ws.filter(w=>{ const [c,d]=span(w); return c<0||d<=a||c>=b; });     // a new colour replaces what it covers
+    if(bt.dataset.wc) ws.push({q:x.q,i:x.i,c:bt.dataset.wc});
+    ws.sort((p,q)=>span(p)[0]-span(q)[0]);
+    await setMark(x.b,x.c,x.v,{words:ws});
+    getSelection().removeAllRanges(); hide();
+    if(SELV===x.v&&$('#wchips')) $('#wchips').innerHTML=wordChips(MARKS[mkey(x.b,x.c,x.v)]||{});
+  });
+  $('#scroll').addEventListener('scroll',()=>{ if(pal.classList.contains('open')&&WSEL){ const x=read(); if(x){ WSEL=x; place(x); } } },{passive:true});
+}

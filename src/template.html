@@ -52,7 +52,7 @@ main{display:flex;flex-direction:column;min-width:0;min-height:0}
 .vpill{border:.5px solid var(--line);background:none;border-radius:980px;padding:3px 11px;font-size:11.5px;font-weight:600;letter-spacing:.06em;color:var(--muted);height:26px}
 .vpill:hover{color:var(--ink);border-color:var(--faint)}
 .vpill .s{color:var(--accent);margin-left:5px;font-weight:700;letter-spacing:0}
-.bar{transition:margin-top .22s ease,box-shadow .2s}
+.bar{transition:transform .26s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
 /* Tecarta-style layout: centred title, no sidebar */
 .bar{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center}
 .bl{display:flex;align-items:center}
@@ -670,9 +670,9 @@ mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 /* highlights */
-:root{--hy:rgba(255,214,10,.32);--hg:rgba(52,199,89,.22);--hb:rgba(10,132,255,.18);--hp:rgba(255,55,95,.16);--hv:rgba(175,82,222,.18)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="black"]){--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26)}}
-:root[data-theme="dark"]{--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26)}
+:root{--hy:rgba(255,214,10,.32);--hg:rgba(52,199,89,.22);--hb:rgba(10,132,255,.18);--hp:rgba(255,55,95,.16);--hv:rgba(175,82,222,.18);--ho:rgba(255,149,0,.24);--hr:rgba(255,59,48,.18);--ht:rgba(48,176,199,.22);--hi:rgba(88,86,214,.18);--hn:rgba(162,132,94,.24);--hk:rgba(142,142,147,.24)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="black"]){--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26);--ho:rgba(240,128,40,.24);--hr:rgba(237,66,69,.24);--ht:rgba(26,188,156,.22);--hi:rgba(114,137,218,.26);--hn:rgba(170,130,90,.26);--hk:rgba(150,152,157,.24)}}
+:root[data-theme="dark"]{--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26);--ho:rgba(240,128,40,.24);--hr:rgba(237,66,69,.24);--ht:rgba(26,188,156,.22);--hi:rgba(114,137,218,.26);--hn:rgba(170,130,90,.26);--hk:rgba(150,152,157,.24)}
 .v{cursor:default}
 .v:hover{background:var(--hover)}
 .v.sel{box-shadow:inset 0 0 0 1.5px var(--accent)}
@@ -699,7 +699,7 @@ main{display:grid;grid-template-rows:auto 1fr}
 .pn h3{font-size:17px;font-weight:600}
 .pn .vt{font-size:15px;line-height:1.6;margin:12px 0 4px;color:var(--ink)}
 .pn .lb{font-size:11px;font-weight:600;color:var(--muted);margin:18px 0 8px}
-.sw6{display:flex;gap:10px;align-items:center}
+.sw6{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .sw6 button{width:26px;height:26px;border-radius:50%;border:0;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
 .sw6 button.on{box-shadow:0 0 0 2px var(--side),0 0 0 4px var(--accent)}
 .sw6 .x{background:var(--card);display:grid;place-items:center;color:var(--muted);font-size:13px}
@@ -748,6 +748,31 @@ main{display:grid;grid-template-rows:auto 1fr}
   .col{padding:36px 20px 100px} .hd,.ttl,.empty,.next{padding-left:0;margin-left:0}
   .tg .lbl{display:none}
 }
+
+/* Top bar floats over the text and slides away with a transform, so hiding it never re-lays out the chapter
+   (the old margin trick made the page jump and fight at the end of a chapter). --barh is set from its height. */
+main{position:relative;grid-template-rows:1fr}
+main>.bar{position:absolute;top:0;left:0;right:0;will-change:transform}
+main>.bar.away{transform:translateY(-100%)}
+#scroll{padding-top:var(--barh,56px);scroll-padding-top:var(--barh,56px);overscroll-behavior-y:contain}
+@media (min-width:861px){#panel{padding-top:var(--barh,56px)}}
+/* highlights sit a little away from the words, like a highlighter pen */
+.v[class*=" c-"]>.t{padding:.14em .42em;margin:-.14em -.42em;border-radius:7px}
+.col.flow .pv[class*=" c-"]>.t{padding:.1em .2em;margin:0 -.2em;border-radius:5px}
+.one .ov[class*=" c-"] .t{padding:.08em .22em;border-radius:7px}
+.res[class*=" c-"] .rt{padding:.1em .3em;margin:0 -.3em}
+.hw{border-radius:4px;padding:.05em .12em;margin:0 -.12em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+/* word highlighter that appears when you select words in a verse */
+#wpal{position:fixed;z-index:62;display:none;gap:7px;align-items:center;background:var(--card);border-radius:980px;box-shadow:var(--shadow);padding:7px 9px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:calc(100vw - 20px);overflow-x:auto;scrollbar-width:none}
+#wpal.open{display:flex;animation:pin .14s ease-out}
+#wpal button{flex:none;width:28px;height:28px;border-radius:50%;border:0;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15);padding:0}
+#wpal .x{background:var(--hover);color:var(--muted);font-size:13px;display:grid;place-items:center}
+#wpal .wl{font-size:11.5px;font-weight:600;color:var(--muted);padding:0 4px 0 6px;white-space:nowrap}
+@media (max-width:700px){#wpal.open{display:grid;grid-template-columns:repeat(6,32px);gap:9px;border-radius:20px;padding:10px 12px} #wpal button{width:32px;height:32px} #wpal .wl{display:none}}
+.wch{display:flex;flex-wrap:wrap;gap:6px}
+.wch span{display:inline-flex;align-items:center;gap:4px;border-radius:980px;padding:3px 4px 3px 10px;font:14px ui-serif,Georgia,serif;color:var(--ink)}
+.wch button{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:12px}
+.pn .hint{font-size:11.5px;color:var(--faint);margin-top:8px}
 </style>
 </head>
 <body>
@@ -785,6 +810,7 @@ main{display:grid;grid-template-rows:auto 1fr}
   </main>
 </div>
 <div id="toast"></div>
+<div id="wpal" role="toolbar" aria-label="Highlight words"></div>
 <div id="pop" role="dialog" aria-label="Strong's definition"></div>
 <div id="prefs" class="sheet" role="dialog" aria-label="Reading settings"></div>
 <div id="randp" class="sheet" role="dialog" aria-label="Random reading"></div>

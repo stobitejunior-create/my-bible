@@ -52,7 +52,7 @@ main{display:flex;flex-direction:column;min-width:0;min-height:0}
 .vpill{border:.5px solid var(--line);background:none;border-radius:980px;padding:3px 11px;font-size:11.5px;font-weight:600;letter-spacing:.06em;color:var(--muted);height:26px}
 .vpill:hover{color:var(--ink);border-color:var(--faint)}
 .vpill .s{color:var(--accent);margin-left:5px;font-weight:700;letter-spacing:0}
-.bar{transition:margin-top .22s ease,box-shadow .2s}
+.bar{transition:transform .26s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
 /* Tecarta-style layout: centred title, no sidebar */
 .bar{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center}
 .bl{display:flex;align-items:center}
@@ -670,9 +670,9 @@ mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 /* highlights */
-:root{--hy:rgba(255,214,10,.32);--hg:rgba(52,199,89,.22);--hb:rgba(10,132,255,.18);--hp:rgba(255,55,95,.16);--hv:rgba(175,82,222,.18)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="black"]){--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26)}}
-:root[data-theme="dark"]{--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26)}
+:root{--hy:rgba(255,214,10,.32);--hg:rgba(52,199,89,.22);--hb:rgba(10,132,255,.18);--hp:rgba(255,55,95,.16);--hv:rgba(175,82,222,.18);--ho:rgba(255,149,0,.24);--hr:rgba(255,59,48,.18);--ht:rgba(48,176,199,.22);--hi:rgba(88,86,214,.18);--hn:rgba(162,132,94,.24);--hk:rgba(142,142,147,.24)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="black"]){--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26);--ho:rgba(240,128,40,.24);--hr:rgba(237,66,69,.24);--ht:rgba(26,188,156,.22);--hi:rgba(114,137,218,.26);--hn:rgba(170,130,90,.26);--hk:rgba(150,152,157,.24)}}
+:root[data-theme="dark"]{--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26);--ho:rgba(240,128,40,.24);--hr:rgba(237,66,69,.24);--ht:rgba(26,188,156,.22);--hi:rgba(114,137,218,.26);--hn:rgba(170,130,90,.26);--hk:rgba(150,152,157,.24)}
 .v{cursor:default}
 .v:hover{background:var(--hover)}
 .v.sel{box-shadow:inset 0 0 0 1.5px var(--accent)}
@@ -699,7 +699,7 @@ main{display:grid;grid-template-rows:auto 1fr}
 .pn h3{font-size:17px;font-weight:600}
 .pn .vt{font-size:15px;line-height:1.6;margin:12px 0 4px;color:var(--ink)}
 .pn .lb{font-size:11px;font-weight:600;color:var(--muted);margin:18px 0 8px}
-.sw6{display:flex;gap:10px;align-items:center}
+.sw6{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .sw6 button{width:26px;height:26px;border-radius:50%;border:0;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
 .sw6 button.on{box-shadow:0 0 0 2px var(--side),0 0 0 4px var(--accent)}
 .sw6 .x{background:var(--card);display:grid;place-items:center;color:var(--muted);font-size:13px}
@@ -748,6 +748,31 @@ main{display:grid;grid-template-rows:auto 1fr}
   .col{padding:36px 20px 100px} .hd,.ttl,.empty,.next{padding-left:0;margin-left:0}
   .tg .lbl{display:none}
 }
+
+/* Top bar floats over the text and slides away with a transform, so hiding it never re-lays out the chapter
+   (the old margin trick made the page jump and fight at the end of a chapter). --barh is set from its height. */
+main{position:relative;grid-template-rows:1fr}
+main>.bar{position:absolute;top:0;left:0;right:0;will-change:transform}
+main>.bar.away{transform:translateY(-100%)}
+#scroll{padding-top:var(--barh,56px);scroll-padding-top:var(--barh,56px);overscroll-behavior-y:contain}
+@media (min-width:861px){#panel{padding-top:var(--barh,56px)}}
+/* highlights sit a little away from the words, like a highlighter pen */
+.v[class*=" c-"]>.t{padding:.14em .42em;margin:-.14em -.42em;border-radius:7px}
+.col.flow .pv[class*=" c-"]>.t{padding:.1em .2em;margin:0 -.2em;border-radius:5px}
+.one .ov[class*=" c-"] .t{padding:.08em .22em;border-radius:7px}
+.res[class*=" c-"] .rt{padding:.1em .3em;margin:0 -.3em}
+.hw{border-radius:4px;padding:.05em .12em;margin:0 -.12em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+/* word highlighter that appears when you select words in a verse */
+#wpal{position:fixed;z-index:62;display:none;gap:7px;align-items:center;background:var(--card);border-radius:980px;box-shadow:var(--shadow);padding:7px 9px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:calc(100vw - 20px);overflow-x:auto;scrollbar-width:none}
+#wpal.open{display:flex;animation:pin .14s ease-out}
+#wpal button{flex:none;width:28px;height:28px;border-radius:50%;border:0;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15);padding:0}
+#wpal .x{background:var(--hover);color:var(--muted);font-size:13px;display:grid;place-items:center}
+#wpal .wl{font-size:11.5px;font-weight:600;color:var(--muted);padding:0 4px 0 6px;white-space:nowrap}
+@media (max-width:700px){#wpal.open{display:grid;grid-template-columns:repeat(6,32px);gap:9px;border-radius:20px;padding:10px 12px} #wpal button{width:32px;height:32px} #wpal .wl{display:none}}
+.wch{display:flex;flex-wrap:wrap;gap:6px}
+.wch span{display:inline-flex;align-items:center;gap:4px;border-radius:980px;padding:3px 4px 3px 10px;font:14px ui-serif,Georgia,serif;color:var(--ink)}
+.wch button{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:12px}
+.pn .hint{font-size:11.5px;color:var(--faint);margin-top:8px}
 </style>
 <meta name="robots" content="noindex,nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -796,6 +821,7 @@ main{display:grid;grid-template-rows:auto 1fr}
   </main>
 </div>
 <div id="toast"></div>
+<div id="wpal" role="toolbar" aria-label="Highlight words"></div>
 <div id="pop" role="dialog" aria-label="Strong's definition"></div>
 <div id="prefs" class="sheet" role="dialog" aria-label="Reading settings"></div>
 <div id="randp" class="sheet" role="dialog" aria-label="Random reading"></div>
@@ -1304,7 +1330,7 @@ function draw(flashV){
   if(nx) h+=`<button class="pill pri" data-go="${nx}">${NAMES[nx[0]]} ${nx[1]+1} ›</button>`;
   h+=planBtn();
   h+='</div>';
-  $('#col').innerHTML=h; $('#col').classList.toggle('wide',!!par); $('#col').classList.toggle('flow',flow); $('#col').classList.remove('onev'); buildBooks(); syncControls(); save(); histRecord();
+  $('#col').innerHTML=h; $('#col').classList.toggle('wide',!!par); $('#col').classList.toggle('flow',flow); $('#col').classList.remove('onev'); buildBooks(); syncControls(); save(); histRecord(); paintWords();
   if(flashV){const el=document.getElementById('v'+flashV); if(el){el.scrollIntoView({block:'center'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1400);}}
   else $('#scroll').scrollTop=0;
 }
@@ -1331,7 +1357,7 @@ function drawOne(ch,o,G,flashV){
       ${p===L.length-1&&planBtn()?`<div class="next">${planBtn()}</div>`:''}
     </div>`;
   }
-  $('#col').innerHTML=h; $('#col').classList.remove('wide','flow'); $('#col').classList.add('onev'); buildBooks(); syncControls(); save(); histRecord(); $('#scroll').scrollTop=0;
+  $('#col').innerHTML=h; $('#col').classList.remove('wide','flow'); $('#col').classList.add('onev'); buildBooks(); syncControls(); save(); histRecord(); $('#scroll').scrollTop=0; paintWords();
 }
 function stepVerse(d){
   const G=godOn(), wasOpen=$('#bodyg').classList.contains('withpanel'), L=oneList(DATA[S.v][S.b][S.c]||[],G), p=L.indexOf(ONE);
@@ -1371,7 +1397,7 @@ $('#ver').onclick=async e=>{
   const v=b.dataset.v; document.body.style.cursor='progress'; await load(v); document.body.style.cursor='';
   const top=firstVisibleVerse(); if(S.v2===v) S.v2=S.v; S.v=v; if(S.par) await load(S.v2); searchMode?rerunSearch():draw(top>1?top:0);
 };
-function firstVisibleVerse(){const vs=[...document.querySelectorAll('.v')]; const t=$('#scroll').getBoundingClientRect().top+60; const el=vs.find(x=>x.getBoundingClientRect().bottom>t); return el?+el.id.slice(1):0;}
+function firstVisibleVerse(){const vs=[...document.querySelectorAll('.v')]; const t=Math.max($('#scroll').getBoundingClientRect().top,$('#bar').getBoundingClientRect().bottom)+40; const el=vs.find(x=>x.getBoundingClientRect().bottom>t); return el?+el.id.slice(1):0;}
 $('#t-strongs').onclick=()=>{S.strongs=!S.strongs; const t=firstVisibleVerse(); searchMode?rerunSearch():draw(t>1?t:0);};
 $('#t-red').onclick=()=>{S.red=!S.red; syncControls(); save();};
 $('#t-god').onclick=()=>{S.god=!S.god; searchMode?rerunSearch():draw();};
@@ -1413,10 +1439,20 @@ const OVER='.sheet.open,#menup.open,#verp.open,#navp.open,#planp.open,#syncp.ope
     e.preventDefault();
   },{passive:false,capture:true});
 }
-['click','touchstart','touchend'].forEach(t=>$('#scroll').addEventListener(t,e=>{
-  if(!phone()||!(document.body.classList.contains('sheet-open')||document.body.classList.contains('nav-open'))) return;
-  e.preventDefault(); e.stopPropagation(); if(t==='click') closeSheets();
-},{capture:true,passive:false}));
+// Every device (iPad and Mac too): a tap or drag outside an open sheet or menu only closes it. The whole gesture is
+// swallowed, so the verse, link or button under your finger never reacts. The toolbar buttons still work (Aa toggles).
+{ let eat=false;
+  const outside=t=>!!document.querySelector(OVER)&&!(t&&t.closest&&(t.closest(OVER)||t.closest('#bar')||t.closest('#toast')));
+  addEventListener('pointerdown',e=>{
+    eat=outside(e.target); if(!eat) return;
+    e.preventDefault(); e.stopPropagation(); closeSheets();
+  },{capture:true,passive:false});
+  ['mousedown','mouseup','touchstart','touchmove','touchend','click','dblclick','contextmenu'].forEach(t=>addEventListener(t,e=>{
+    if(!eat) return;
+    if(e.cancelable) e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    if(t==='click'||t==='dblclick') setTimeout(()=>{ eat=false; },0);
+  },{capture:true,passive:false}));
+}
 
 // ---------- Imported Bibles (XML) ----------
 // Saved in this browser's / the Mac app's IndexedDB: store "meta" {id,name,abbr,strongs,red,verses} and store "data" (the text).
@@ -1836,11 +1872,20 @@ function applyTheme(){
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applyTheme());
 // The toolbar slides away while reading down the page and returns when scrolling up.
-{ let last=0; $('#scroll').addEventListener('scroll',()=>{
-    const y=$('#scroll').scrollTop, bar=$('#bar'), d=y-last; last=y;
-    if(document.querySelector('.sheet.open')||y<60) return bar.style.marginTop='0px';
-    if(d>6) bar.style.marginTop=-bar.offsetHeight+'px'; else if(d<-6) bar.style.marginTop='0px';
-  },{passive:true}); }
+// The bar floats over the text and moves with a transform, so nothing re-lays out while scrolling. The rubber-band
+// bounce at the top and the end of a chapter is ignored, so the bar no longer flickers in and out down there.
+{ const sc=$('#scroll'), bar=$('#bar'); let last=0, ticking=false;
+  const setH=()=>document.documentElement.style.setProperty('--barh',bar.offsetHeight+'px');
+  setH(); if(window.ResizeObserver) new ResizeObserver(setH).observe(bar); else addEventListener('resize',setH);
+  const upd=()=>{ ticking=false;
+    const y=sc.scrollTop, max=sc.scrollHeight-sc.clientHeight;
+    if(document.querySelector('.sheet.open')||y<60){ bar.classList.remove('away'); last=Math.max(0,y); return; }
+    if(y<0||y>max-2){ last=Math.min(Math.max(y,0),max); return; }     // bouncing at an end: leave the bar as it is
+    const d=y-last;
+    if(d>8){ bar.classList.add('away'); last=y; } else if(d<-14){ bar.classList.remove('away'); last=y; }
+    else if((d>0&&bar.classList.contains('away'))||(d<0&&!bar.classList.contains('away'))) last=y;
+  };
+  sc.addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(upd); } },{passive:true}); }
 $('#info').onclick=()=>$('#modal').classList.add('open');
 $('#closeModal').onclick=()=>$('#modal').classList.remove('open');
 $('#modal').onclick=e=>{if(e.target.id==='modal') $('#modal').classList.remove('open');};
@@ -1952,7 +1997,11 @@ function seg2(){ return '<span class="seg sm">'+Object.keys(VN).filter(v=>v!==S.
 $('#t-par').onclick=async()=>{ S.par=!S.par; if(S.par){ if(S.v2===S.v) S.v2=Object.keys(VN).find(v=>v!==S.v); await load(S.v2);} const t=firstVisibleVerse(); searchMode?rerunSearch():draw(t>1?t:0); };
 
 // ---------- Highlights & notes ----------
-const COLORS=[['y','Yellow','#ffd60a'],['g','Green','#34c759'],['b','Blue','#0a84ff'],['p','Pink','#ff375f'],['v','Purple','#af52de']];
+const COLORS=[['y','Yellow','#ffd60a'],['o','Orange','#ff9f0a'],['r','Red','#ff453a'],['p','Pink','#ff375f'],['v','Purple','#af52de'],
+  ['i','Indigo','#5e5ce6'],['b','Blue','#0a84ff'],['t','Teal','#30b0c7'],['g','Green','#34c759'],['n','Brown','#a2845e'],['k','Grey','#8e8e93']];
+{ const st=document.createElement('style');   // one rule per colour, for verses, one-verse view, the highlights list and single words
+  st.textContent=COLORS.map(([k])=>`.v.c-${k}>.t,.one .ov.c-${k} .t,.res.c-${k} .rt,.hw.c-${k}{background:var(--h${k})}`).join('');
+  document.head.appendChild(st); }
 const mkey=(b,c,v)=>`m-${b}.${c}.${v}`;
 let MARKS={}, MSTORE=null;
 function localMarks(){ return store.get('marks',{}); }
@@ -1965,6 +2014,7 @@ function applyMarks(){
     const nn=el.querySelector('.n'); const dot=nn.querySelector('.nd');
     if(mk&&mk.note&&!dot) nn.insertAdjacentHTML('beforeend','<i class="nd" title="Has a note"></i>'); else if(!(mk&&mk.note)&&dot) dot.remove();
   });
+  paintWords();
 }
 async function initMarks(){
   MARKS=localMarks(); applyMarks();
@@ -1985,7 +2035,8 @@ async function initMarks(){
 }
 async function setMark(b,c,v,patch){
   const k=mkey(b,c,v); const cur={b,c,v,color:'',note:'',...(MARKS[k]||{}),...patch,t:Date.now()};
-  const empty=!cur.color&&!cur.note.trim();
+  if(cur.words&&!cur.words.length) delete cur.words;
+  const empty=!cur.color&&!cur.note.trim()&&!cur.words;
   if(empty) delete MARKS[k]; else MARKS[k]=cur;
   applyMarks();
   if(MSTORE){ try{ empty?await MSTORE.doc(k).delete():await MSTORE.doc(k).set(cur); return true; }catch(e){ toast('Couldn’t save. Check your connection and try again.'); return false; } }
@@ -1993,13 +2044,14 @@ async function setMark(b,c,v,patch){
 }
 function showMarks(f){
   f=f||'all'; searchMode={type:'m',f}; closePanel(false);
-  const list=Object.values(MARKS).filter(m=>f==='all'||(f==='note'?m.note:m.color===f)).sort((a,b)=>a.b-b.b||a.c-b.c||a.v-b.v);
+  const list=Object.values(MARKS).filter(m=>f==='all'||(f==='note'?m.note:(m.color===f||(m.words||[]).some(w=>w.c===f)))).sort((a,b)=>a.b-b.b||a.c-b.c||a.v-b.v);
   const o={...opts(),god:false};
   const pills=[['all','All',''],...COLORS.map(c=>[c[0],c[1],c[2]]),['note','With notes','']].map(([k,l,col])=>`<button data-fc="${k}" class="${f===k?'on':''}">${col?`<i style="background:${col}"></i>`:''}${l}</button>`).join('');
   const rows=list.map(m=>{ const s=(DATA[S.v][m.b]||[])[m.c-1]?.[m.v-1]||''; const r=render(s,o);
-    return `<div class="res${m.color?' c-'+m.color:''}" data-b="${m.b}" data-c="${m.c-1}" data-v="${m.v-1}"><div class="rr">${NAMES[m.b]} ${m.c}:${m.v}</div><div class="rt"><span class="${''}">${r.html}</span></div>${m.note?`<div class="nt">${esc(m.note)}</div>`:''}</div>`;}).join('');
+    return `<div class="res${m.color?' c-'+m.color:''}" data-mk="${mkey(m.b,m.c,m.v)}" data-b="${m.b}" data-c="${m.c-1}" data-v="${m.v-1}"><div class="rr">${NAMES[m.b]} ${m.c}:${m.v}</div><div class="rt"><span class="${''}">${r.html}</span></div>${m.note?`<div class="nt">${esc(m.note)}</div>`:''}</div>`;}).join('');
   $('#col').classList.remove('wide');
   $('#col').innerHTML=header('Highlights and notes', list.length?`${list.length} ${list.length===1?'verse':'verses'}. Tap one to open it.`:(Object.keys(MARKS).length?'Nothing matches this filter.':'Click any verse while reading to highlight it or add a note.'))+`<div class="fl">${pills}</div>`+rows;
+  document.querySelectorAll('#col .res[data-mk]').forEach(el=>{ const m=MARKS[el.dataset.mk]; if(m&&m.words) wordsApply(el.querySelector('.rt'),m.words); });
   $('#reft').textContent='Highlights and notes'; $('#scroll').scrollTop=0; buildBooks(); syncControls();
 }
 $('#marks').onclick=()=>showMarks('all');
@@ -2020,6 +2072,7 @@ async function openPanel(n){
     <div class="vt serif">${esc(txt)}</div>
     <div class="lb">Highlight</div>
     <div class="sw6">${COLORS.map(([k,l,col])=>`<button data-col="${k}" title="${l}" aria-label="${l}" style="background:${col}" class="${mk.color===k?'on':''}"></button>`).join('')}<button class="x${!mk.color?' on':''}" data-col="" title="No highlight" aria-label="No highlight">✕</button></div>
+    <div id="wchips">${wordChips(mk)}</div>
     <div class="lb">Note</div>
     <textarea id="note" placeholder="Write a note on this verse">${esc(mk.note||'')}</textarea>
     <div class="saved" id="saved"></div>
@@ -2030,6 +2083,7 @@ async function openPanel(n){
     <div id="xr"><span style="font-size:13px;color:var(--muted)">Loading…</span></div>
   </div>`;
   $('#pclose').onclick=()=>closePanel();
+  $('#wchips').onclick=async e=>{ const x=e.target.closest('[data-wdel]'); if(!x) return; const m=MARKS[mkey(b,c,n)]||{}; const w=(m.words||[]).slice(); w.splice(+x.dataset.wdel,1); await setMark(b,c,n,{words:w}); $('#wchips').innerHTML=wordChips(MARKS[mkey(b,c,n)]||{}); };
   p.querySelectorAll('[data-col]').forEach(bt=>bt.onclick=async()=>{ await setMark(b,c,n,{color:bt.dataset.col}); p.querySelectorAll('[data-col]').forEach(x=>x.classList.toggle('on',x===bt)); });
   $('#note').oninput=e=>{ clearTimeout(noteTimer); $('#saved').textContent=''; const val=e.target.value; noteTimer=setTimeout(async()=>{ if(await setMark(b,c,n,{note:val})) $('#saved').textContent='Saved'; },600); };
   $('#copyv').onclick=()=>copyText(`“${txt}” ${NAMES[b]} ${c}:${n} (${VN[S.v]})`);
@@ -2904,7 +2958,7 @@ function turn(dir,fn,fromDx){
   const ov=document.createElement('div'); ov.className='turnov';
   ov.style.cssText=`left:${r.left}px;top:${r.top}px;width:${W}px;height:${r.height}px`;
   const cl=$('#col').cloneNode(true);   // ids kept so the copy is styled the same; it sits after the real page, so lookups still find the real one
-  cl.style.transform=`translateY(${-sc.scrollTop}px)`; ov.appendChild(cl); document.body.appendChild(ov);
+  cl.style.transform=`translateY(${(parseFloat(getComputedStyle(sc).paddingTop)||0)-sc.scrollTop}px)`; ov.appendChild(cl); document.body.appendChild(ov);
   sc.style.transform=''; fn();
   const ease='cubic-bezier(.22,.8,.24,1)', T=style==='book'?520:style==='fade'?260:340, o={duration:T,easing:ease,fill:'both'};
   const s=dir>0?1:-1; let a1, a2;
@@ -2964,6 +3018,85 @@ function statusColor(){
   const m=document.createElement('meta'); m.name='theme-color'; m.content=rgb; document.head.appendChild(m);
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>setTimeout(statusColor,50));
+
+
+// ---------- Highlighting single words ----------
+// Select words in a verse (long-press and drag on a phone, drag with the mouse on a Mac) and a row of colours appears.
+// A word highlight is saved on the verse's mark as {q: the words, i: which occurrence in the verse, c: colour}, so it
+// follows the words, not character positions, and still lands on the same words in other versions that use them.
+function verseText(t){ let s=''; const w=document.createTreeWalker(t,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest('.dc,.nd')?2:1}); while(w.nextNode()) s+=w.currentNode.data; return s; }
+function nthIndex(txt,q,i){ let at=-1; for(let k=0;k<=i;k++){ at=txt.indexOf(q,at+1); if(at<0) return -1; } return at; }
+function wordsApply(t,words){
+  if(!t) return;
+  if(t.querySelector('.hw')){ t.querySelectorAll('.hw').forEach(x=>x.replaceWith(...x.childNodes)); t.normalize(); }
+  (words||[]).forEach(w=>{
+    const start=nthIndex(verseText(t),w.q,w.i); if(start<0) return; const end=start+w.q.length;
+    const nodes=[]; let pos=0; const tw=document.createTreeWalker(t,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest('.dc,.nd')?2:1});
+    while(tw.nextNode()){ const n=tw.currentNode, a=pos, b=pos+n.data.length; pos=b; if(b>start&&a<end) nodes.push([n,Math.max(0,start-a),Math.min(n.data.length,end-a)]); }
+    nodes.forEach(([n,a,b])=>{ if(b<=a) return; let m=n; if(a>0) m=m.splitText(a); if(b-a<m.data.length) m.splitText(b-a);
+      const sp=document.createElement('span'); sp.className='hw c-'+w.c; m.replaceWith(sp); sp.appendChild(m); });
+  });
+}
+function paintWords(){
+  document.querySelectorAll('#col .v[data-n],#col .ov[data-n]').forEach(el=>{
+    const m=MARKS[mkey(S.b,S.c+1,+el.dataset.n)], ws=m&&m.words;
+    if(!ws&&!el.querySelector('.hw')) return;
+    el.querySelectorAll(':scope>.t,.t').forEach(t=>wordsApply(t,ws));
+  });
+}
+function wordChips(mk){
+  const ws=mk&&mk.words||[]; const col=k=>(COLORS.find(c=>c[0]===k)||[])[2]||'#ccc';
+  return ws.length?`<div class="lb">Highlighted words</div><div class="wch">${ws.map((w,j)=>`<span class="hw c-${w.c}">${esc(w.q.length>40?w.q.slice(0,38)+'…':w.q)}<button data-wdel="${j}" title="Remove" aria-label="Remove this highlight">✕</button></span>`).join('')}</div>`
+    :'<div class="hint">Tip: select words in the verse to highlight just those words.</div>';
+}
+var WSEL=null;
+{
+  const pal=$('#wpal'); let hideT=0, down=false;
+  pal.innerHTML='<span class="wl">Highlight</span>'+COLORS.map(([k,l,col])=>`<button data-wc="${k}" title="${l}" aria-label="${l}" style="background:${col}"></button>`).join('')+'<button class="x" data-wc="" title="Remove highlight" aria-label="Remove highlight">✕</button>';
+  const hide=()=>{ pal.classList.remove('open'); WSEL=null; };
+  // work out which verse and which words are selected
+  const read=()=>{
+    const sel=getSelection(); if(!sel||sel.isCollapsed||!sel.rangeCount||searchMode) return null;
+    const r=sel.getRangeAt(0); const el=n=>n&&(n.nodeType===1?n:n.parentElement);
+    const t=el(r.startContainer)&&el(r.startContainer).closest('#col .t'); if(!t) return null;
+    const v=t.closest('.v[data-n],.ov[data-n]'); if(!v) return null;
+    const rr=r.cloneRange(); if(!t.contains(r.endContainer)) rr.setEnd(t,t.childNodes.length);   // keep it inside this verse
+    const pre=document.createRange(); pre.setStart(t,0); pre.setEnd(rr.startContainer,rr.startOffset);
+    const txt=f=>{ const d=document.createElement('div'); d.appendChild(f); d.querySelectorAll('.dc,.nd').forEach(x=>x.remove()); return d.textContent; };
+    let start=txt(pre.cloneContents()).length, q=txt(rr.cloneContents());
+    const lead=q.length-q.replace(/^\s+/,'').length; start+=lead; q=q.trim(); if(!q) return null;
+    const full=verseText(t); let i=0, at=-1; while((at=full.indexOf(q,at+1))>=0&&at<start) i++;
+    if(full.substr(start,q.length)!==q) return null;
+    return {b:S.b,c:S.c+1,v:+v.dataset.n,q,i,rect:rr.getBoundingClientRect()};
+  };
+  const place=x=>{
+    pal.classList.add('open'); const w=pal.offsetWidth, h=pal.offsetHeight, R=x.rect;
+    let top=R.bottom+12; if(top+h>innerHeight-12) top=Math.max(12,R.top-h-58);   // below the words; iOS puts Copy above
+    pal.style.top=top+'px'; pal.style.left=Math.max(10,Math.min(innerWidth-w-10,R.left+R.width/2-w/2))+'px';
+  };
+  document.addEventListener('selectionchange',()=>{
+    clearTimeout(hideT);
+    const x=read();
+    if(x){ WSEL=x; clearTimeout(place.t); place.t=setTimeout(()=>{ if(WSEL===x) place(x); },120); }
+    else if(!down) hideT=setTimeout(hide,350);
+  });
+  pal.addEventListener('pointerdown',e=>{ down=true; e.preventDefault(); },{passive:false});   // keep the selection while tapping a colour
+  addEventListener('pointerup',()=>setTimeout(()=>{ down=false; },400));
+  pal.addEventListener('click',async e=>{
+    const bt=e.target.closest('[data-wc]'); const x=WSEL; if(!bt||!x) return;
+    const m=MARKS[mkey(x.b,x.c,x.v)]||{}; let ws=(m.words||[]).slice();
+    const t=document.querySelector(`#col [data-n="${x.v}"] .t`), full=t?verseText(t):'';
+    const span=w=>{ const a=nthIndex(full,w.q,w.i); return [a,a+w.q.length]; };
+    const [a,b]=span(x);
+    ws=ws.filter(w=>{ const [c,d]=span(w); return c<0||d<=a||c>=b; });     // a new colour replaces what it covers
+    if(bt.dataset.wc) ws.push({q:x.q,i:x.i,c:bt.dataset.wc});
+    ws.sort((p,q)=>span(p)[0]-span(q)[0]);
+    await setMark(x.b,x.c,x.v,{words:ws});
+    getSelection().removeAllRanges(); hide();
+    if(SELV===x.v&&$('#wchips')) $('#wchips').innerHTML=wordChips(MARKS[mkey(x.b,x.c,x.v)]||{});
+  });
+  $('#scroll').addEventListener('scroll',()=>{ if(pal.classList.contains('open')&&WSEL){ const x=read(); if(x){ WSEL=x; place(x); } } },{passive:true});
+}
 
 // ===================== Library and book reader (EPUB and PDF) =====================
 // Mac app: every book in Ben's iCloud Drive › Authors folder (bible://app/lib/…, see mac/Library.swift).

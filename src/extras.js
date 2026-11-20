@@ -229,6 +229,7 @@ function applyRemote(rows,first){
     else if(r.id==='x-history'){ HIST=mergeHist(HIST,d&&d.list||[]); store.set('history',HIST); other=true; }
     else if(r.id==='x-mem'){ MEM=first?[...(d&&d.list||[]),...MEM.filter(x=>!(d&&d.list||[]).some(y=>y.b===x.b&&y.c===x.c&&y.v===x.v))]:(d&&d.list||[]); store.set('mem',MEM); other=true; }
     else if(r.id==='x-pos'&&d) remotePos(d);
+    else if(r.id.startsWith('bm-')&&d){ BIBIN.push({id:r.id.slice(3),meta:d}); store.set('bibin',BIBIN); }
     else if(r.id==='x-theme'&&d&&(d.custom||d.glass)){ if(d.custom) S.custom=d.custom; if(d.glass) S.glass=d.glass; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
   }
   store.set('outbox',OUTBOX);
@@ -240,7 +241,7 @@ async function syncNow(first){
   if(!syncOn()||SYNC.busy) return; SYNC.busy=true; SYNC.err=''; if($('#syncp').classList.contains('open')) renderSync();
   try{
     let rows=[], off=0; const since=first?'1970-01-01T00:00:00Z':SYNC.last;
-    for(;;){ const page=await sbRest('GET',`bible_docs?select=id,data,deleted,updated_at&updated_at=gt.${encodeURIComponent(since)}&order=updated_at.asc&limit=1000&offset=${off}`)||[]; rows=rows.concat(page); if(page.length<1000) break; off+=1000; }
+    for(;;){ const page=await sbRest('GET',`bible_docs?select=id,data,deleted,updated_at&updated_at=gt.${encodeURIComponent(since)}&id=not.like.${encodeURIComponent('bx-*')}&order=updated_at.asc&limit=1000&offset=${off}`)||[]; rows=rows.concat(page); if(page.length<1000) break; off+=1000; }
     if(first){ const have=new Set(rows.map(r=>r.id)); for(const [k,v] of Object.entries(localDocs())) if(!have.has(k)&&!OUTBOX[k]) OUTBOX[k]={data:v}; store.set('outbox',OUTBOX); }
     applyRemote(rows,first);
     if(rows.length){ SYNC.last=rows[rows.length-1].updated_at; store.set('synclast',SYNC.last); }
@@ -251,6 +252,7 @@ async function syncNow(first){
     }
     ids.forEach(id=>{ if(OUTBOX[id]===snap[id]) delete OUTBOX[id]; }); store.set('outbox',OUTBOX);
     SYNC.at=Date.now(); store.set('syncat',SYNC.at);
+    await downloadImports(); await uploadImports();
   }catch(e){ SYNC.err=e.message||String(e); }
   SYNC.busy=false; if($('#syncp').classList.contains('open')) renderSync();
 }
@@ -449,3 +451,48 @@ $('#prefs').addEventListener('click',e=>{
   toast('Checking…'); sw.postMessage('check');
 });
 offlineCheck();
+
+// ---------- Imported Bibles follow you (private) ----------
+// A Bible you import (e.g. your own NKJV file) is copyrighted, so it is never put in the public phone site. Instead,
+// when Sync is on, it is uploaded to YOUR rows only (row-level security: no one else can read them) and your other
+// devices download it. Docs: "bm-<id>" = name/abbreviation/part count; "bx-<id>-<n>" = chapters, about 110 KB each
+// (the table allows 256 KB a row). The main pull skips bx- rows; they are fetched only when a device needs them.
+var BIBUP=store.get('bibup',{}), BIBIN=store.get('bibin',[]);
+async function uploadImports(){
+  if(!syncOn()) return;
+  for(const m of IMPORTS.slice()){
+    if(BIBUP[m.id]) continue;
+    const data=await load(m.id); if(!data) continue;
+    const parts=[]; let cur=[], size=0;
+    data.forEach((bk,b)=>bk.forEach((ch,c)=>{ const n=JSON.stringify(ch).length; if(size+n>110000&&cur.length){ parts.push(cur); cur=[]; size=0; } cur.push([b,c,ch]); size+=n; }));
+    if(cur.length) parts.push(cur);
+    const up=rows=>sbRest('POST','bible_docs?on_conflict=user_id,id',rows,{Prefer:'resolution=merge-duplicates,return=minimal'});
+    for(let i=0;i<parts.length;i+=4) await up(parts.slice(i,i+4).map((p,k)=>({id:`bx-${m.id}-${i+k}`,data:{p},deleted:false})));
+    await up([{id:'bm-'+m.id,data:{name:m.name,abbr:m.abbr,strongs:!!m.strongs,red:!!m.red,verses:m.verses||0,parts:parts.length},deleted:false}]);
+    BIBUP[m.id]=1; store.set('bibup',BIBUP);
+  }
+}
+async function downloadImports(){
+  const later=[];
+  while(BIBIN.length){
+    const {id,meta}=BIBIN.shift();
+    if(IMPORTS.some(x=>x.id===id||(x.abbr===meta.abbr&&x.verses===meta.verses))){ BIBUP[id]=1; store.set('bibup',BIBUP); continue; }
+    const rows=await sbRest('GET',`bible_docs?select=id,data&deleted=is.false&id=like.${encodeURIComponent('bx-'+id+'-*')}`)||[];
+    if(rows.length<meta.parts){ later.push({id,meta}); continue; }        // still uploading from the other device; try next sync
+    const data=Array.from({length:66},()=>[]);
+    for(const r of rows) for(const [b,c,ch] of r.data.p) data[b][c]=ch;
+    data.forEach(bk=>{ for(let c=0;c<bk.length;c++) bk[c]=bk[c]||[]; if(!bk.length) bk.push([]); });
+    let abbr=meta.abbr; while(Object.values(VN).includes(abbr)) abbr+='2';
+    const m={id,name:meta.name,abbr,strongs:meta.strongs,red:meta.red,verses:meta.verses};
+    await idb('data','put',[id,data]); await idb('meta','put',m);
+    DATA[id]=data; IMPORTS.push(m); registerImport(m); BIBUP[id]=1; store.set('bibup',BIBUP);
+    toast(`Added ${abbr} from your other device`);
+    if(typeof renderVer==='function'&&$('#verp').classList.contains('open')) renderVer();
+  }
+  BIBIN=later; store.set('bibin',BIBIN);
+}
+async function forgetImportRemote(id){
+  if(!syncOn()||!BIBUP[id]) return;
+  delete BIBUP[id]; store.set('bibup',BIBUP);
+  try{ await sbRest('DELETE',`bible_docs?id=like.${encodeURIComponent('bx-'+id+'-*')}`); await sbRest('DELETE',`bible_docs?id=eq.${encodeURIComponent('bm-'+id)}`); }catch(e){}
+}

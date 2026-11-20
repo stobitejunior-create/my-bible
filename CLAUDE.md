@@ -253,3 +253,10 @@ and `applyCustom()` sets them inline on <html>. The colours sync as db doc `x-th
 docs/sw.js serves index.html from the cache first (instant, works with no signal, saves data) and refreshes it in the background,
 comparing ETag/Last-Modified; when it saves a newer copy it posts `{type:'updated'}` and the page shows the `#upd` "Reload" pill.
 Settings → This device shows the offline state and a Check for updates button (posts 'check' to the worker). docs/sw.js is edited by hand.
+
+## Imported Bibles (XML or JSON) and sync
+`parseBibleFile` picks `parseBibleJSON` (Stobite TV `{books:[[[…]]]}` / Stobite Presenter `{name,abbrev,books:[{chapters}]}`) or
+`parseBibleXML`. Imported Bibles are copyrighted (e.g. Ben's NKJV), so they are NEVER bundled into docs/ (public repo).
+They follow the user privately through Sync: `uploadImports()` writes `bx-<id>-<n>` rows (chapters, ≤110 KB each) then
+`bm-<id>` (meta + part count); other devices get `bm-` in the normal pull (which skips `bx-`) and `downloadImports()` fetches
+the parts. `BIBUP` marks ids already uploaded/received; `BIBIN` (persisted) retries incomplete downloads.

@@ -182,7 +182,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
     /// File → Import: read the XML natively and hand the text to the page's importer.
     @objc func importBible() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.xml, .data]
+        panel.allowedContentTypes = [.xml, .json, .data]
         panel.allowsMultipleSelection = false
         panel.message = "Choose a Bible in Zefania, OSIS, USFX, Beblia or OpenSong XML format"
         panel.beginSheetModal(for: window) { [weak self] r in

@@ -426,15 +426,32 @@ function parseBibleXML(text,fileName){
   if(!abbr||abbr.length>8) abbr=name.split(/\s+/).filter(w=>/^[A-Za-z0-9]/.test(w)&&!/^(the|of|and|a)$/i.test(w)).map(w=>w[0]).join('').toUpperCase().slice(0,5)||'XML';
   return {name,abbr,data,strongs:anyS,red:anyRed,verses:V.size};
 }
+// JSON Bibles: {books:[[["v1","v2"],…],…]} (Stobite TV) or {name,abbrev,books:[{name,chapters:[[…]]}]} (Stobite Presenter),
+// or just the books array. Verses are plain text; any Strong's/red-letter marks in our own format are kept.
+function parseBibleJSON(text,fileName){
+  let j; try{ j=JSON.parse(text); }catch(e){ throw new Error('That JSON file couldn’t be read.'); }
+  let books=Array.isArray(j)?j:(j.books||j.bible||j.data);
+  if(!Array.isArray(books)) throw new Error('No books were found in this JSON file.');
+  books=books.map(b=>Array.isArray(b)?b:(b&&(b.chapters||b.c))||[]);
+  if(books.length<66) throw new Error(`This file has ${books.length} books; a whole Bible (66) is needed.`);
+  const data=books.slice(0,66).map(bk=>bk.map(ch=>(Array.isArray(ch)?ch:Object.values(ch||{})).map(v=>String(typeof v==='object'&&v?(v.text||v.t||''):v??'').replace(/\s+/g,' ').trim())));
+  let verses=0, anyS=false, anyRed=false; data.forEach(bk=>bk.forEach(ch=>ch.forEach(v=>{ if(v){ verses++; if(!anyS&&/\[[HG]\d+\]/.test(v)) anyS=true; if(!anyRed&&v.includes('{')) anyRed=true; } })));
+  if(!verses) throw new Error('No verses were found in this file.');
+  const name=String(Array.isArray(j)?'':(j.name||j.version||j.title||'')).trim()||fileName.replace(/\.[^.]+$/,'');
+  let abbr=String(Array.isArray(j)?'':(j.abbrev||j.abbr||j.abbreviation||'')).trim().toUpperCase();
+  if(!abbr||abbr.length>8){ const m=fileName.match(/^([a-z0-9]{2,8})\.json$/i); abbr=m?m[1].toUpperCase():name.split(/\s+/).filter(w=>/^[A-Za-z0-9]/.test(w)&&!/^(the|of|and|a)$/i.test(w)).map(w=>w[0]).join('').toUpperCase().slice(0,5)||'JSON'; }
+  return {name,abbr,data,strongs:anyS,red:anyRed,verses};
+}
+const parseBibleFile=(text,name)=>/\.json$/i.test(name)||/^\s*[\[{]/.test(text)?parseBibleJSON(text,name):parseBibleXML(text,name);
 let PENDING=null;
 $('#xmlfile').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
   toast('Reading '+f.name+'…');
-  try{ PENDING=parseBibleXML(await f.text(),f.name); renderMenu('confirm'); openSheet($('#menup'),$('#menu')); }
+  try{ PENDING=parseBibleFile(await f.text(),f.name); renderMenu('confirm'); openSheet($('#menup'),$('#menu')); }
   catch(err){ toast(err.message||'Couldn’t read that file.'); }
 });
 // Used by the Mac app's File → Import menu, which reads the file natively.
-window.importXMLText=async(text,name)=>{ PENDING=parseBibleXML(text,name); renderMenu('confirm'); openSheet($('#menup'),$('#menu')); if(!phone()) $('#menup').style.left=$('#menu').getBoundingClientRect().left+'px'; return PENDING.verses; };
+window.importXMLText=async(text,name)=>{ PENDING=parseBibleFile(text,name); renderMenu('confirm'); openSheet($('#menup'),$('#menu')); if(!phone()) $('#menup').style.left=$('#menu').getBoundingClientRect().left+'px'; return PENDING.verses; };
 async function saveImport(name,abbr){
   const P=PENDING; if(!P) return;
   abbr=(abbr||P.abbr).trim().toUpperCase().slice(0,8)||'XML'; while(Object.values(VN).includes(abbr)) abbr+='2';
@@ -443,10 +460,12 @@ async function saveImport(name,abbr){
   catch(e){ return toast('Couldn’t save the Bible here: '+(e.message||e)); }
   DATA[m.id]=P.data; IMPORTS.push(m); registerImport(m); PENDING=null; closeSheets();
   $(`#ver button[data-v="${m.id}"]`).click(); toast(`Added ${m.abbr}`);
+  if(syncOn()) setTimeout(()=>syncNow(),500);
 }
 async function removeImport(id){
   const m=IMPORTS.find(x=>x.id===id); if(!m||!confirm(`Remove ${m.name} from this Bible app?`)) return;
   try{ await idb('data','del',id); await idb('meta','del',id); }catch(e){}
+  forgetImportRemote(id);
   IMPORTS=IMPORTS.filter(x=>x.id!==id); delete VN[id]; delete VFULL[id]; delete DATA[id]; STRONGS.delete(id); MARKED.delete(id);
   $(`#ver button[data-v="${id}"]`)?.remove();
   if(S.v===id){ S.v='kjv'; } if(S.v2===id){ S.v2=S.v==='bsb'?'kjv':'bsb'; }
@@ -482,7 +501,7 @@ function renderMenu(mode){
     <button class="mi" data-m="marks">${ICON.marks}Highlights and notes</button>
     <button class="mi" data-m="bm">${ICON.bm}Bookmarks and history</button>
     ${MSTORE?'':`<button class="mi" data-m="sync">${ICON.sync}Sync<small>${SB?'On':'Off'}</small></button>`}
-    <button class="mi" data-m="import">${ICON.imp}Import a Bible (XML)…</button>
+    <button class="mi" data-m="import">${ICON.imp}Import a Bible (XML or JSON)…</button>
     ${IMPORTS.length?`<div class="lbx">Imported</div>${IMPORTS.map(x=>`<div class="imp"><b>${esc(x.abbr)}</b><span>${esc(x.name)}</span><button data-rmimp="${x.id}">Remove</button></div>`).join('')}`:''}
     <hr><button class="mi" data-m="about">${ICON.info}About</button>`;
 }

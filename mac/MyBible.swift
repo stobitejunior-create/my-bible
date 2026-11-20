@@ -15,6 +15,29 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
         guard let url = task.request.url else { return }
         var path = url.path
         if path.isEmpty || path == "/" { path = "/bible.html" }
+        // the book Library (see Library.swift); slow work (iCloud downloads, conversions) runs off the main thread
+        if path.hasPrefix("/lib/") {
+            let parts = path.dropFirst(5).split(separator: "/").map(String.init)
+            let fail = { task.didFailWithError(NSError(domain: NSURLErrorDomain, code: NSURLErrorFileDoesNotExist)) }
+            if parts.first == "index.json" || parts.first == "index-fresh.json" {
+                let fresh = parts.first == "index-fresh.json"
+                BookLibrary.shared.work.async { let d = fresh ? BookLibrary.shared.indexJSON() : BookLibrary.shared.quickIndexJSON(); DispatchQueue.main.async { self.respond(task, url, d, "application/json") } }
+                return
+            }
+            guard parts.count == 2 else { return fail() }
+            if parts[0] == "file" {
+                BookLibrary.shared.work.async {
+                    let r = BookLibrary.shared.file(parts[1])
+                    DispatchQueue.main.async { if let (d, k) = r { self.respond(task, url, d, k == "pdf" ? "application/pdf" : "application/epub+zip") } else { fail() } }
+                }
+                return
+            }
+            if parts[0] == "cover" {
+                BookLibrary.shared.work.async { BookLibrary.shared.cover(parts[1]) { d in DispatchQueue.main.async { if let d { self.respond(task, url, d, "image/jpeg") } else { fail() } } } }
+                return
+            }
+            return fail()
+        }
         // Dag Heward-Mills books from Ben's EPUB folder (see Epub.swift)
         if path == "/epub-index.json" { return respond(task, url, EpubLibrary.shared.indexJSON(), "application/json") }
         if path.hasPrefix("/epub/") {
@@ -34,7 +57,7 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
             task.didFailWithError(NSError(domain: NSURLErrorDomain, code: NSURLErrorFileDoesNotExist))
             return
         }
-        let type = ["html": "text/html; charset=utf-8", "js": "text/javascript", "css": "text/css", "png": "image/png"][file.pathExtension] ?? "application/octet-stream"
+        let type = ["html": "text/html; charset=utf-8", "js": "text/javascript", "mjs": "text/javascript", "css": "text/css", "png": "image/png"][file.pathExtension] ?? "application/octet-stream"
         let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1",
                                        headerFields: ["Content-Type": type, "Content-Length": String(data.count)])!
         task.didReceive(response)
@@ -108,8 +131,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         app.addItem(.separator())
         app.addItem(item("Quit My Bible", #selector(NSApplication.terminate(_:)), "q"))
         let file = NSMenu(title: "File")
-        file.addItem(item("Import a Bible (XML)…", #selector(importBible), "o"))
+        file.addItem(item("Import a Bible (XML or JSON)…", #selector(importBible), "o"))
         file.addItem(item("Choose Dag Heward-Mills Book Folder…", #selector(chooseBooks)))
+        file.addItem(item("Choose Library Folder…", #selector(chooseLibrary)))
         file.addItem(.separator())
         file.addItem(item("Close Window", #selector(NSWindow.performClose(_:)), "w"))
         let edit = NSMenu(title: "Edit")
@@ -132,6 +156,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         go.addItem(item("Verse Shuffle", #selector(verseShuffle), "v", [.command, .shift]))
         go.addItem(item("Highlights and Notes", #selector(highlights), "b", [.command, .shift]))
         go.addItem(item("Bookmarks and History", #selector(bookmarks), "y"))
+        go.addItem(.separator())
+        go.addItem(item("Library", #selector(library), "l", [.command, .shift]))
         let view = NSMenu(title: "View")
         view.addItem(item("Actual Size", #selector(zoomReset), "0"))
         view.addItem(item("Zoom In", #selector(zoomIn), "="))
@@ -162,6 +188,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
     @objc func verseShuffle() { js("shufOpen()") }
     @objc func highlights() { js("closeSheets(); showMarks('all')") }
     @objc func bookmarks() { js("closeSheets(); showBookmarks()") }
+    @objc func library() { js("closeSheets(); libOpen()") }
+    /// The folder of books the Library shows (default: iCloud Drive › Authors).
+    @objc func chooseLibrary() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false
+        panel.message = "Choose the folder that holds your books (EPUB, PDF, MOBI)"
+        panel.directoryURL = BookLibrary.shared.folder
+        panel.beginSheetModal(for: window) { [weak self] r in
+            guard r == .OK, let url = panel.url else { return }
+            BookLibrary.shared.setFolder(url); self?.js("libReload&&libReload(true)")
+        }
+    }
     /// The folder of EPUBs the Dag Heward-Mills picker reads chapters from.
     @objc func chooseBooks() {
         let panel = NSOpenPanel()

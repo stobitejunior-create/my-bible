@@ -25,3 +25,6 @@ assert html.count('</head>') >= 1
 html = html.replace('</head>', head + '</head>', 1).replace('<title>Bible</title>', '<title>My Bible</title>', 1)
 (root / 'docs' / 'index.html').write_text(html, encoding='utf-8')
 print(f'docs/index.html  {len(html) / 1e6:.2f} MB')
+# PDF engine for the Library reader (Mozilla pdf.js, Apache 2.0), loaded only when a PDF is opened
+import shutil
+shutil.copytree(root / 'vendor' / 'pdfjs', root / 'docs' / 'pdfjs', dirs_exist_ok=True)

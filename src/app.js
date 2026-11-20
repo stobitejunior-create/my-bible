@@ -481,6 +481,7 @@ const ICON={
   marks:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5.5 3h9v14l-4.5-3.2L5.5 17z"/></svg>',
   imp:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v9m-3.5-3.5L10 12l3.5-3.5M4 14v2.5h12V14"/></svg>',
   shuf:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h3.5c2.5 0 3.5 1.5 4.5 4s2 4 4.5 4H17M3 14h3.5c1.2 0 2-.4 2.7-1.1M17 6h-1.5c-1.2 0-2 .4-2.7 1.1M15 4l2 2-2 2M15 12l2 2-2 2"/></svg>',
+  lib:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 4.5c2.4-.9 4.6-.6 6.5 1v11c-1.9-1.6-4.1-1.9-6.5-1z"/><path d="M16.5 4.5c-2.4-.9-4.6-.6-6.5 1v11c1.9-1.6 4.1-1.9 6.5-1z"/></svg>',
   bm:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2"/></svg>',
   sync:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8.5A6 6 0 0 0 5 6.2M4 11.5a6 6 0 0 0 11 2.3"/><path d="M5 3v3.3h3.3M15 17v-3.3h-3.3"/></svg>',
   plan:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="14" height="12.5" rx="2.5"/><path d="M3 8.5h14M7 3v3M13 3v3M7.5 12.5l1.7 1.7 3.3-3.4"/></svg>',
@@ -498,7 +499,8 @@ function renderMenu(mode){
     return;
   }
   const pl=planMenuLabel();
-  m.innerHTML=`<button class="mi" data-m="plan">${ICON.plan}Reading plan${pl?`<small>${esc(pl)}</small>`:''}</button>
+  m.innerHTML=`<button class="mi" data-m="lib">${ICON.lib}Library<small>${window.MAC_APP?'⇧⌘L':'Books'}</small></button>
+    <button class="mi" data-m="plan">${ICON.plan}Reading plan${pl?`<small>${esc(pl)}</small>`:''}</button>
     <button class="mi" data-m="shuffle">${ICON.shuf}Verse shuffle</button>
     <button class="mi" data-m="search">${ICON.search}Search<small>⌘K</small></button>
     <button class="mi" data-m="marks">${ICON.marks}Highlights and notes</button>
@@ -513,7 +515,8 @@ $('#menup').onclick=e=>{
   e.stopPropagation();
   const b=e.target.closest('button'); if(!b) return;
   const k=b.dataset.m;
-  if(k==='plan'){ openPlan(); }
+  if(k==='lib'){ closeSheets(); libOpen(); }
+  else if(k==='plan'){ openPlan(); }
   else if(k==='shuffle'){ shufOpen(); }
   else if(k==='bm'){ closeSheets(); showBookmarks(); }
   else if(k==='sync'){ openSync(); }

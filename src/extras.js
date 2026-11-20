@@ -229,6 +229,7 @@ function applyRemote(rows,first){
     else if(r.id==='x-history'){ HIST=mergeHist(HIST,d&&d.list||[]); store.set('history',HIST); other=true; }
     else if(r.id==='x-mem'){ MEM=first?[...(d&&d.list||[]),...MEM.filter(x=>!(d&&d.list||[]).some(y=>y.b===x.b&&y.c===x.c&&y.v===x.v))]:(d&&d.list||[]); store.set('mem',MEM); other=true; }
     else if(r.id==='x-pos'&&d) remotePos(d);
+    else if((r.id.startsWith('r-')||r.id.startsWith('lc-'))&&libApplyRemote(r.id,d)){}
     else if(r.id.startsWith('bm-')&&d){ BIBIN.push({id:r.id.slice(3),meta:d}); store.set('bibin',BIBIN); }
     else if(r.id==='x-theme'&&d&&(d.custom||d.glass)){ if(d.custom) S.custom=d.custom; if(d.glass) S.glass=d.glass; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
   }

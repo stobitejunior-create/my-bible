@@ -3,7 +3,8 @@
 // GitHub in the background. If there is a newer version it is saved and the page is told, so it can offer "Reload".
 // The whole app, with every bundled Bible version, is one file (index.html), so saving it saves everything.
 const CACHE = 'my-bible';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
+const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png',
+  './pdfjs/pdf.min.mjs', './pdfjs/pdf.worker.min.mjs'];   // the PDF engine, so PDFs open with no signal too
 const PAGE = './index.html';
 
 self.addEventListener('install', e => {

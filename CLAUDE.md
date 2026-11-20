@@ -270,3 +270,21 @@ quotation marks. On Ben's NKJV: 7,215/7,215 KJV-marked verses marked, 0 extra, ~
 chapter), then animates both with the Web Animations API: slide (default), cover, book (3D rotateY), fade, none.
 The swipe handler moves #scroll with the finger (resists when there's no chapter that way) and calls
 `turn(d, ()=>rawStep(d), dx)`. #prev/#next, ←/→ and the end-of-chapter pills all go through `turn`. Reduce Motion = none.
+
+## Library and book reader (src/reader.js, mac/Library.swift)
+- Mac app: lists Ben's iCloud Drive › Authors folder (File → Choose Library Folder…, UserDefaults `libraryFolder`) from file
+  and folder names only — nothing downloads until a book is opened or its cover scrolls into view.
+  `bible://app/lib/index.json` (cached list, instant) / `index-fresh.json` (walks the folder, ~6–11 s for ~3,000 files),
+  `lib/file/<id>` (EPUB/PDF bytes; folders named *.epub are zipped; MOBI/AZW3 → EPUB with calibre's ebook-convert, cached),
+  `lib/cover/<id>` (Quick Look for EPUB/PDF, calibre `ebook-meta --get-cover` for Kindle; cached in ~/Library/Caches/My Bible/covers;
+  an empty file means "no cover").
+- Phone/browser: "+ Add books" picks EPUB/PDF from Files → IndexedDB `library` (books/files/covers). The Mac's book list syncs
+  as `lc-<n>` docs so the phone shows "On your Mac" books with where to find them in Files.
+- Reader: one engine for both. EPUB = our own ZIP reader (DecompressionStream) + CSS-column pages in an iframe (scripts and
+  on* attributes stripped), Pages/Scroll, Slide/Fade/None, themes from the app, fonts, size, spacing, margins, justify + English
+  hyphenation, contents, bookmarks, search, progress slider. PDF = Mozilla pdf.js 4.10.38 legacy build in vendor/pdfjs
+  (copied to dist/pdfjs, docs/pdfjs and the app bundle; cached offline by sw.js), lazy page drawing, zoom, dark pages.
+- Position + bookmarks per book sync as `r-<key>` (key = hash of the file name, so Mac and phone match).
+- Books are copyrighted: never commit them, never put them in docs/.
+- Test hooks: MYBIBLE_EVAL with `window.webkit.messageHandlers.native.postMessage('…')` prints "page: …" to stdout.
+  A hidden browser pane doesn't run animation frames, so pdf.js drawing and Web Animations stall there (not on devices).

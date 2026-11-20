@@ -297,6 +297,27 @@ const closePrefs=()=>{ $('#prefs').classList.remove('open'); closeSheets(); };
 $('#scrim').onclick=()=>closeSheets();
 // Phones: while a sheet is open, a tap or drag that reaches the verses only closes the sheet; it never selects or scrolls them.
 $('#scrim').addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+// iOS still scrolls the page or the verses when a drag inside a sheet reaches its top or bottom (or the sheet doesn't
+// scroll at all). So while one is open, a drag only ever scrolls the sheet's own list, and only while it has room to move.
+const OVER='.sheet.open,#menup.open,#verp.open,#navp.open,#planp.open,#syncp.open';
+{ let ty=0;
+  document.addEventListener('touchstart',e=>{ ty=e.touches[0].clientY; },{passive:true,capture:true});
+  document.addEventListener('touchmove',e=>{
+    if(!document.querySelector(OVER)) return;
+    const box=e.target.closest&&e.target.closest(OVER);
+    if(!box){ e.preventDefault(); return; }
+    if(e.target.matches('input[type=range]')) return;   // sliders move sideways
+    const dy=e.touches[0].clientY-ty;
+    for(let el=e.target; el&&el!==box.parentNode; el=el.parentElement){
+      const cs=getComputedStyle(el);
+      if(!/(auto|scroll)/.test(cs.overflowY)||el.scrollHeight<=el.clientHeight+1) continue;
+      const atTop=el.scrollTop<=0, atEnd=el.scrollTop+el.clientHeight>=el.scrollHeight-1;
+      if((dy>0&&atTop)||(dy<0&&atEnd)) continue;   // this list can't move that way; try the one around it
+      return;                                       // this list scrolls: let it
+    }
+    e.preventDefault();
+  },{passive:false,capture:true});
+}
 ['click','touchstart','touchend'].forEach(t=>$('#scroll').addEventListener(t,e=>{
   if(!phone()||!(document.body.classList.contains('sheet-open')||document.body.classList.contains('nav-open'))) return;
   e.preventDefault(); e.stopPropagation(); if(t==='click') closeSheets();

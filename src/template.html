@@ -22,7 +22,8 @@
   --line:rgba(255,255,255,.09); --hover:rgba(255,255,255,.06); --sel:#3a3a3c; --accent:#0a84ff; --red:#ff6b6b; --sn:#7c7c82;
   --mark:rgba(255,214,10,.28); --flash:rgba(10,132,255,.16); --card:#2c2c2e; --segon:#636366; --shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.1); color-scheme:dark;}
 *,*::before,*::after{box-sizing:border-box}
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior:none}
+body.sheet-open,body.nav-open{overflow:hidden}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;margin:0}
 .serif{font-family:var(--bf,ui-serif,"New York","Iowan Old Style",Georgia,"Times New Roman",serif)}
 button{font:inherit;color:inherit}

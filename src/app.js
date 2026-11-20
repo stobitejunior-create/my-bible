@@ -543,7 +543,7 @@ function headHTML(style,b,c,v){
 // Settings: a short main page in three sections, with Font and Chapter heading as their own pages.
 let PREFPAGE='main';
 const GLASS_SW='radial-gradient(80% 90% at 90% 0%,#b9cff4,transparent 70%),linear-gradient(160deg,#f7f9fc,#e6edf7)';
-const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft blue wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea']];
+const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft blue wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea'],['custom','Custom','Your own colours','','']];
 const CHEV_R='<svg class="chv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 2.5 3.5 3.5-3.5 3.5"/></svg>';
 function renderPrefs(){
   const el=$('#prefs');
@@ -558,7 +558,7 @@ function renderPrefs(){
     return;
   }
   if(PREFPAGE==='theme'){
-    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`).join('')}</div>`;
+    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>(k==='custom'&&([bg,ink]=[custom().bg,custom().ink]),`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`)).join('')}</div>`+customEditorHTML();
     return;
   }
   if(PREFPAGE==='heading'){
@@ -585,7 +585,7 @@ function renderPrefs(){
       <div class="srow"><span>Layout</span>${seg('layout',S.layout,[['verse','Verses'],['para','Paragraph'],['one','One verse']])}</div>
       <button class="srow nav" data-page="heading"><span>Chapter heading</span><span class="sv">${(HEADS.find(h=>h[0]===S.hs)||HEADS[0])[1]}${CHEV_R}</span></button>
       <button class="srow nav" data-page="theme"><span>Appearance</span><span class="sv">${(THEMES.find(t=>t[0]===S.theme)||THEMES[0])[1]}${CHEV_R}</span></button>
-    </div>`;
+    </div>${offlineRowHTML()}`;
 }
 $('#gear').onclick=()=>{ if($('#prefs').classList.contains('open')) return closePrefs(); PREFPAGE='main'; renderPrefs(); openSheet($('#prefs'),$('#gear')); };
 $('#prefs').onclick=async e=>{
@@ -594,6 +594,8 @@ $('#prefs').onclick=async e=>{
   const keep=()=>{ const fl=$('#flist'), fs=fl?fl.scrollTop:0, top=$('#prefs').scrollTop; renderPrefs(); if($('#flist')) $('#flist').scrollTop=fs; $('#prefs').scrollTop=top; };
   if(b.dataset.page){ PREFPAGE=b.dataset.page; renderPrefs(); $('#prefs').scrollTop=0; return; }
   if(b.dataset.theme){ S.theme=b.dataset.theme; }
+  if(b.dataset.cpreset){ setCustom({...CPRESETS[+b.dataset.cpreset][1]}); keep(); return; }
+  if('creset' in b.dataset){ setCustom({...CUSTOM_DEF}); keep(); return; }
   if(b.dataset.layout){ const fv=oneMode()?ONE:firstVisibleVerse(); S.layout=b.dataset.layout; if(S.layout==='one'){ ONE=fv||1; ONEKEY=S.b+'.'+S.c; } save(); if(!searchMode) draw(S.layout==='one'?ONE:(fv>1?fv:0)); }
   if(b.dataset.tg){ $('#'+b.dataset.tg).click(); setTimeout(keep,50); return; }
   if(b.dataset.hs){ S.hs=b.dataset.hs; save(); if(!searchMode) draw(firstVisibleVerse()>1?firstVisibleVerse():0); }
@@ -700,6 +702,7 @@ $('#theme').onclick=()=>{ const i=THEMES.findIndex(t=>t[0]===S.theme); S.theme=T
 function applyTheme(){
   const th=S.theme, root=document.documentElement;
   if(th==='auto'||th==='autoglass') root.removeAttribute('data-theme'); else root.setAttribute('data-theme',th==='glass'?'light':th);
+  applyCustom(th==='custom');
   root.classList.toggle('glass',th==='glass'||(th==='autoglass'&&!matchMedia('(prefers-color-scheme:dark)').matches));
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applyTheme());

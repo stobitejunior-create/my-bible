@@ -246,3 +246,10 @@ Earlier ideas still open:
 `THEMES` in src/app.js: auto, autoglass, light, glass, dark, sepia, black. `applyTheme()` sets `data-theme` and the `glass` class on <html>
 (glass = light tokens + `:root.glass` frosted panels on a blue wash, modelled on the Stobite CRM's light look; autoglass drops the
 class when the system is dark). Dark uses Discord-like soft colours (#313338 page, #2b2d31 cards, #dbdee1 text, #7983f5 accent).
+Custom theme (`custom`): four colours in `S.custom` (page, text, accent, red letters); `customVars()` in extras.js derives the rest
+and `applyCustom()` sets them inline on <html>. The colours sync as db doc `x-theme`; the chosen theme itself does not.
+
+## Offline (phone site)
+docs/sw.js serves index.html from the cache first (instant, works with no signal, saves data) and refreshes it in the background,
+comparing ETag/Last-Modified; when it saves a newer copy it posts `{type:'updated'}` and the page shows the `#upd` "Reload" pill.
+Settings → This device shows the offline state and a Check for updates button (posts 'check' to the worker). docs/sw.js is edited by hand.

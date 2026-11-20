@@ -267,6 +267,17 @@ body.shuf-open{overflow:hidden}
 :root.glass #panel{background:rgba(255,255,255,.66)}
 :root.glass #scrim{background:rgba(30,50,80,.12)}
 :root.glass #prefs .sbox,:root.glass #prefs .themes button{box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 1px 2px rgba(30,50,80,.04)}
+#prefs .cpick{display:inline-flex;align-items:center;gap:10px}
+#prefs .cpick code{font:12px ui-monospace,Menlo,monospace;color:var(--muted)}
+#prefs .cpick input{width:34px;height:26px;border:.5px solid var(--line);border-radius:7px;padding:0;background:none;cursor:pointer}
+#prefs .cpick input::-webkit-color-swatch-wrapper{padding:2px} #prefs .cpick input::-webkit-color-swatch{border:0;border-radius:5px}
+#prefs .cpre{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#prefs .cpre button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);padding:0}
+#prefs .cpre span{position:relative;width:100%;height:40px;border-radius:10px;display:grid;place-items:center;font:500 15px ui-serif,Georgia,serif;border:.5px solid rgba(128,128,128,.35);overflow:hidden}
+#prefs .cpre i{position:absolute;left:0;right:0;bottom:0;height:4px}
+#upd{position:fixed;z-index:72;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:var(--card);box-shadow:var(--shadow);border-radius:980px;padding:6px 6px 6px 16px;font:13.5px -apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap;animation:up .2s ease-out}
+#upd [data-reload]{border:0;background:var(--accent);color:#fff;border-radius:980px;padding:6px 14px;font-weight:600}
+#upd [data-x]{border:0;background:none;color:var(--muted);padding:6px 8px}
 #prefs .themes{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
 #prefs .themes button{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;border:.5px solid var(--line);background:var(--card);border-radius:12px;padding:8px 10px}
 #prefs .themes button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}

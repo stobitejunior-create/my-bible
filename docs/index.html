@@ -267,6 +267,17 @@ body.shuf-open{overflow:hidden}
 :root.glass #panel{background:rgba(255,255,255,.66)}
 :root.glass #scrim{background:rgba(30,50,80,.12)}
 :root.glass #prefs .sbox,:root.glass #prefs .themes button{box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 1px 2px rgba(30,50,80,.04)}
+#prefs .cpick{display:inline-flex;align-items:center;gap:10px}
+#prefs .cpick code{font:12px ui-monospace,Menlo,monospace;color:var(--muted)}
+#prefs .cpick input{width:34px;height:26px;border:.5px solid var(--line);border-radius:7px;padding:0;background:none;cursor:pointer}
+#prefs .cpick input::-webkit-color-swatch-wrapper{padding:2px} #prefs .cpick input::-webkit-color-swatch{border:0;border-radius:5px}
+#prefs .cpre{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#prefs .cpre button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);padding:0}
+#prefs .cpre span{position:relative;width:100%;height:40px;border-radius:10px;display:grid;place-items:center;font:500 15px ui-serif,Georgia,serif;border:.5px solid rgba(128,128,128,.35);overflow:hidden}
+#prefs .cpre i{position:absolute;left:0;right:0;bottom:0;height:4px}
+#upd{position:fixed;z-index:72;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:var(--card);box-shadow:var(--shadow);border-radius:980px;padding:6px 6px 6px 16px;font:13.5px -apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap;animation:up .2s ease-out}
+#upd [data-reload]{border:0;background:var(--accent);color:#fff;border-radius:980px;padding:6px 14px;font-weight:600}
+#upd [data-x]{border:0;background:none;color:var(--muted);padding:6px 8px}
 #prefs .themes{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
 #prefs .themes button{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;border:.5px solid var(--line);background:var(--card);border-radius:12px;padding:8px 10px}
 #prefs .themes button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
@@ -1447,7 +1458,7 @@ function headHTML(style,b,c,v){
 // Settings: a short main page in three sections, with Font and Chapter heading as their own pages.
 let PREFPAGE='main';
 const GLASS_SW='radial-gradient(80% 90% at 90% 0%,#b9cff4,transparent 70%),linear-gradient(160deg,#f7f9fc,#e6edf7)';
-const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft blue wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea']];
+const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft blue wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea'],['custom','Custom','Your own colours','','']];
 const CHEV_R='<svg class="chv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 2.5 3.5 3.5-3.5 3.5"/></svg>';
 function renderPrefs(){
   const el=$('#prefs');
@@ -1462,7 +1473,7 @@ function renderPrefs(){
     return;
   }
   if(PREFPAGE==='theme'){
-    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`).join('')}</div>`;
+    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>(k==='custom'&&([bg,ink]=[custom().bg,custom().ink]),`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`)).join('')}</div>`+customEditorHTML();
     return;
   }
   if(PREFPAGE==='heading'){
@@ -1489,7 +1500,7 @@ function renderPrefs(){
       <div class="srow"><span>Layout</span>${seg('layout',S.layout,[['verse','Verses'],['para','Paragraph'],['one','One verse']])}</div>
       <button class="srow nav" data-page="heading"><span>Chapter heading</span><span class="sv">${(HEADS.find(h=>h[0]===S.hs)||HEADS[0])[1]}${CHEV_R}</span></button>
       <button class="srow nav" data-page="theme"><span>Appearance</span><span class="sv">${(THEMES.find(t=>t[0]===S.theme)||THEMES[0])[1]}${CHEV_R}</span></button>
-    </div>`;
+    </div>${offlineRowHTML()}`;
 }
 $('#gear').onclick=()=>{ if($('#prefs').classList.contains('open')) return closePrefs(); PREFPAGE='main'; renderPrefs(); openSheet($('#prefs'),$('#gear')); };
 $('#prefs').onclick=async e=>{
@@ -1498,6 +1509,8 @@ $('#prefs').onclick=async e=>{
   const keep=()=>{ const fl=$('#flist'), fs=fl?fl.scrollTop:0, top=$('#prefs').scrollTop; renderPrefs(); if($('#flist')) $('#flist').scrollTop=fs; $('#prefs').scrollTop=top; };
   if(b.dataset.page){ PREFPAGE=b.dataset.page; renderPrefs(); $('#prefs').scrollTop=0; return; }
   if(b.dataset.theme){ S.theme=b.dataset.theme; }
+  if(b.dataset.cpreset){ setCustom({...CPRESETS[+b.dataset.cpreset][1]}); keep(); return; }
+  if('creset' in b.dataset){ setCustom({...CUSTOM_DEF}); keep(); return; }
   if(b.dataset.layout){ const fv=oneMode()?ONE:firstVisibleVerse(); S.layout=b.dataset.layout; if(S.layout==='one'){ ONE=fv||1; ONEKEY=S.b+'.'+S.c; } save(); if(!searchMode) draw(S.layout==='one'?ONE:(fv>1?fv:0)); }
   if(b.dataset.tg){ $('#'+b.dataset.tg).click(); setTimeout(keep,50); return; }
   if(b.dataset.hs){ S.hs=b.dataset.hs; save(); if(!searchMode) draw(firstVisibleVerse()>1?firstVisibleVerse():0); }
@@ -1604,6 +1617,7 @@ $('#theme').onclick=()=>{ const i=THEMES.findIndex(t=>t[0]===S.theme); S.theme=T
 function applyTheme(){
   const th=S.theme, root=document.documentElement;
   if(th==='auto'||th==='autoglass') root.removeAttribute('data-theme'); else root.setAttribute('data-theme',th==='glass'?'light':th);
+  applyCustom(th==='custom');
   root.classList.toggle('glass',th==='glass'||(th==='autoglass'&&!matchMedia('(prefers-color-scheme:dark)').matches));
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applyTheme());
@@ -2308,6 +2322,7 @@ function applyRemote(rows,first){
     else if(r.id==='x-history'){ HIST=mergeHist(HIST,d&&d.list||[]); store.set('history',HIST); other=true; }
     else if(r.id==='x-mem'){ MEM=first?[...(d&&d.list||[]),...MEM.filter(x=>!(d&&d.list||[]).some(y=>y.b===x.b&&y.c===x.c&&y.v===x.v))]:(d&&d.list||[]); store.set('mem',MEM); other=true; }
     else if(r.id==='x-pos'&&d) remotePos(d);
+    else if(r.id==='x-theme'&&d&&d.custom){ S.custom=d.custom; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
   }
   store.set('outbox',OUTBOX);
   if(marks){ store.set('marks',MARKS); applyMarks(); }
@@ -2452,6 +2467,81 @@ $('#epr').addEventListener('click',e=>{
   if('epp' in D){ EPCUR.c--; epShow(); } if('epn' in D){ EPCUR.c++; epShow(); }
 });
 $('#epr').addEventListener('change',e=>{ if(e.target.id==='epsel'){ EPCUR.c=+e.target.value; epShow(); } });
+
+// ---------- Custom theme (Settings → Appearance → Custom) ----------
+// Four colours you pick (page, text, accent, red letters); every other colour is worked out from them, so it always
+// looks balanced. The colours sync between devices as db doc "x-theme" (which theme each device uses does not).
+var CUSTOM_DEF={bg:'#1f2430',ink:'#e6e9ef',accent:'#88a4f0',red:'#f29191'};
+var CPRESETS=[['Midnight',CUSTOM_DEF],['Nord',{bg:'#2e3440',ink:'#e5e9f0',accent:'#88c0d0',red:'#e0959b'}],['Forest',{bg:'#1d2621',ink:'#dfe8df',accent:'#7fc49a',red:'#e8998f'}],
+  ['Plum',{bg:'#2a2230',ink:'#ece3f0',accent:'#c49af0',red:'#f29bb0'}],['Linen',{bg:'#f7f3ec',ink:'#2d2a26',accent:'#a0623a',red:'#a8322a'}],['Mint',{bg:'#eef6f2',ink:'#1f2d27',accent:'#2f8a63',red:'#b3362c'}],
+  ['Sky',{bg:'#eef3fb',ink:'#1b2431',accent:'#2f62c9',red:'#b3261e'}],['Rose',{bg:'#fbf1f1',ink:'#33232a',accent:'#c0466e',red:'#a82a3a'}]];
+var CVARS=['--bg','--side','--bar','--ink','--muted','--faint','--line','--hover','--sel','--accent','--red','--sn','--mark','--flash','--card','--segon','--shadow','--shbg','--hy','--hg','--hb','--hp','--hv','color-scheme'];
+const custom=()=>Object.assign({},CUSTOM_DEF,S.custom||{});
+function lum(hex){ const n=parseInt(hex.slice(1),16), c=[n>>16,(n>>8)&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4;}); return .2126*c[0]+.7152*c[1]+.0722*c[2]; }
+function customVars(){
+  const {bg,ink,accent,red}=custom(), dark=lum(bg)<.35, mix=(a,p,b)=>`color-mix(in srgb,${a} ${p}%,${b})`;
+  return {'--bg':bg,'--ink':ink,'--accent':accent,'--red':red,'--shbg':bg,
+    '--side':mix(ink,dark?3:4,bg),'--card':dark?mix('#ffffff',4,bg):mix('#ffffff',70,bg),'--bar':mix(bg,86,'transparent'),
+    '--muted':mix(ink,62,bg),'--faint':mix(ink,38,bg),'--sn':mix(ink,48,bg),'--line':mix(ink,dark?8:10,'transparent'),'--hover':mix(ink,6,'transparent'),
+    '--sel':mix(ink,dark?14:10,bg),'--segon':dark?mix(ink,20,bg):'#ffffff','--flash':mix(accent,16,'transparent'),'--mark':dark?'rgba(240,178,50,.24)':'rgba(255,204,0,.34)',
+    '--shadow':dark?'0 12px 40px rgba(0,0,0,.42),0 0 0 .5px rgba(0,0,0,.3)':'0 12px 40px rgba(0,0,0,.13),0 0 0 .5px rgba(0,0,0,.07)',
+    '--hy':dark?'rgba(240,178,50,.22)':'rgba(255,204,0,.32)','--hg':dark?'rgba(35,165,90,.22)':'rgba(52,199,89,.22)','--hb':mix(accent,dark?26:20,'transparent'),
+    '--hp':dark?'rgba(235,69,158,.2)':'rgba(255,55,95,.16)','--hv':dark?'rgba(155,89,182,.26)':'rgba(175,82,222,.18)','color-scheme':dark?'dark':'light'};
+}
+function applyCustom(on){
+  if(!CVARS) return;   // app.js can call this before this file has run; applyTheme() runs again below
+  const st=document.documentElement.style;
+  if(!on){ CVARS.forEach(k=>st.removeProperty(k)); return; }
+  for(const [k,v] of Object.entries(customVars())) st.setProperty(k,v);
+}
+function customEditorHTML(){
+  if(S.theme!=='custom') return '';
+  const c=custom(), row=(k,l)=>`<label class="srow"><span>${l}</span><span class="cpick"><code>${c[k]}</code><input type="color" data-ccol="${k}" value="${c[k]}" aria-label="${l} colour"></span></label>`;
+  return `<div class="sg">Your colours</div><div class="sbox">${row('bg','Page')}${row('ink','Text')}${row('accent','Accent')}${row('red','Red letters')}</div>
+    <div class="sg">Start from</div><div class="cpre">${CPRESETS.map(([n,p],i)=>`<button data-cpreset="${i}" title="${n}"><span style="background:${p.bg};color:${p.ink}">Aa<i style="background:${p.accent}"></i></span>${n}</button>`).join('')}</div>
+    <button class="pill" data-creset style="width:100%;margin-top:12px">Reset to Midnight</button>`;
+}
+function setCustom(c){ S.custom=c; save(); applyTheme(); syncPut('x-theme',{custom:c}); }
+$('#prefs').addEventListener('input',e=>{
+  const k=e.target.dataset&&e.target.dataset.ccol; if(!k) return;
+  S.custom=Object.assign(custom(),{[k]:e.target.value}); applyTheme();
+  const code=e.target.parentNode.querySelector('code'); if(code) code.textContent=e.target.value;
+  clearTimeout(setCustom.t); setCustom.t=setTimeout(()=>setCustom(S.custom),600);
+});
+applyTheme();
+
+// ---------- Offline (phone site) ----------
+// sw.js opens the app from the copy saved on the phone and checks GitHub in the background; when it saves a newer
+// version it tells us, and we offer a Reload. Settings shows whether this device has the app saved for offline use.
+var OFFLINE={state:window.MAC_APP?'mac':'checking',at:0};
+async function offlineCheck(){
+  if(window.MAC_APP) return;
+  if(!('serviceWorker' in navigator)||!window.caches||(location.protocol!=='https:'&&location.hostname!=='localhost')){ OFFLINE.state='none'; return; }
+  try{ const r=await caches.match('./index.html'); OFFLINE.state=r?'saved':'saving'; }catch(e){ OFFLINE.state='none'; }
+  if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});   // ask the phone not to clear it
+}
+function showUpdate(){
+  let u=$('#upd'); if(!u){ u=document.createElement('div'); u.id='upd'; document.body.appendChild(u); }
+  u.innerHTML='<span>A new version is ready</span><button data-reload>Reload</button><button data-x aria-label="Later">✕</button>';
+  u.onclick=e=>{ if(e.target.closest('[data-reload]')) location.reload(); else if(e.target.closest('[data-x]')) u.remove(); };
+}
+if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',e=>{
+  const d=e.data||{};
+  if(d.type==='updated'){ OFFLINE.state='saved'; showUpdate(); }
+  if(d.type==='checked'){ OFFLINE.at=Date.now(); OFFLINE.state='saved'; toast(d.offline?'No connection; using the saved copy':d.changed?'Updated':'You have the latest version'); if(d.changed) showUpdate(); if(PREFPAGE==='main'&&$('#prefs').classList.contains('open')) renderPrefs(); }
+});
+function offlineRowHTML(){
+  if(OFFLINE.state==='mac') return '';
+  const v={saved:'Saved on this phone ✓',saving:'Saving…',checking:'Checking…',none:'Add to Home Screen first'}[OFFLINE.state];
+  return `<div class="sg">This device</div><div class="sbox"><div class="srow"><span>Offline</span><span class="sv">${v}</span></div>
+    ${OFFLINE.state==='saved'?'<button class="srow nav" data-updcheck><span>Check for updates</span><span class="sv">'+CHEV_R+'</span></button>':''}</div>`;
+}
+$('#prefs').addEventListener('click',e=>{
+  if(!e.target.closest('[data-updcheck]')) return;
+  const sw=navigator.serviceWorker&&navigator.serviceWorker.controller; if(!sw) return toast('Not saved yet; try again in a moment');
+  toast('Checking…'); sw.postMessage('check');
+});
+offlineCheck();
 
 </script>
 </body>

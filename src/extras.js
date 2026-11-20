@@ -229,6 +229,7 @@ function applyRemote(rows,first){
     else if(r.id==='x-history'){ HIST=mergeHist(HIST,d&&d.list||[]); store.set('history',HIST); other=true; }
     else if(r.id==='x-mem'){ MEM=first?[...(d&&d.list||[]),...MEM.filter(x=>!(d&&d.list||[]).some(y=>y.b===x.b&&y.c===x.c&&y.v===x.v))]:(d&&d.list||[]); store.set('mem',MEM); other=true; }
     else if(r.id==='x-pos'&&d) remotePos(d);
+    else if(r.id==='x-theme'&&d&&d.custom){ S.custom=d.custom; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
   }
   store.set('outbox',OUTBOX);
   if(marks){ store.set('marks',MARKS); applyMarks(); }
@@ -373,3 +374,78 @@ $('#epr').addEventListener('click',e=>{
   if('epp' in D){ EPCUR.c--; epShow(); } if('epn' in D){ EPCUR.c++; epShow(); }
 });
 $('#epr').addEventListener('change',e=>{ if(e.target.id==='epsel'){ EPCUR.c=+e.target.value; epShow(); } });
+
+// ---------- Custom theme (Settings → Appearance → Custom) ----------
+// Four colours you pick (page, text, accent, red letters); every other colour is worked out from them, so it always
+// looks balanced. The colours sync between devices as db doc "x-theme" (which theme each device uses does not).
+var CUSTOM_DEF={bg:'#1f2430',ink:'#e6e9ef',accent:'#88a4f0',red:'#f29191'};
+var CPRESETS=[['Midnight',CUSTOM_DEF],['Nord',{bg:'#2e3440',ink:'#e5e9f0',accent:'#88c0d0',red:'#e0959b'}],['Forest',{bg:'#1d2621',ink:'#dfe8df',accent:'#7fc49a',red:'#e8998f'}],
+  ['Plum',{bg:'#2a2230',ink:'#ece3f0',accent:'#c49af0',red:'#f29bb0'}],['Linen',{bg:'#f7f3ec',ink:'#2d2a26',accent:'#a0623a',red:'#a8322a'}],['Mint',{bg:'#eef6f2',ink:'#1f2d27',accent:'#2f8a63',red:'#b3362c'}],
+  ['Sky',{bg:'#eef3fb',ink:'#1b2431',accent:'#2f62c9',red:'#b3261e'}],['Rose',{bg:'#fbf1f1',ink:'#33232a',accent:'#c0466e',red:'#a82a3a'}]];
+var CVARS=['--bg','--side','--bar','--ink','--muted','--faint','--line','--hover','--sel','--accent','--red','--sn','--mark','--flash','--card','--segon','--shadow','--shbg','--hy','--hg','--hb','--hp','--hv','color-scheme'];
+const custom=()=>Object.assign({},CUSTOM_DEF,S.custom||{});
+function lum(hex){ const n=parseInt(hex.slice(1),16), c=[n>>16,(n>>8)&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4;}); return .2126*c[0]+.7152*c[1]+.0722*c[2]; }
+function customVars(){
+  const {bg,ink,accent,red}=custom(), dark=lum(bg)<.35, mix=(a,p,b)=>`color-mix(in srgb,${a} ${p}%,${b})`;
+  return {'--bg':bg,'--ink':ink,'--accent':accent,'--red':red,'--shbg':bg,
+    '--side':mix(ink,dark?3:4,bg),'--card':dark?mix('#ffffff',4,bg):mix('#ffffff',70,bg),'--bar':mix(bg,86,'transparent'),
+    '--muted':mix(ink,62,bg),'--faint':mix(ink,38,bg),'--sn':mix(ink,48,bg),'--line':mix(ink,dark?8:10,'transparent'),'--hover':mix(ink,6,'transparent'),
+    '--sel':mix(ink,dark?14:10,bg),'--segon':dark?mix(ink,20,bg):'#ffffff','--flash':mix(accent,16,'transparent'),'--mark':dark?'rgba(240,178,50,.24)':'rgba(255,204,0,.34)',
+    '--shadow':dark?'0 12px 40px rgba(0,0,0,.42),0 0 0 .5px rgba(0,0,0,.3)':'0 12px 40px rgba(0,0,0,.13),0 0 0 .5px rgba(0,0,0,.07)',
+    '--hy':dark?'rgba(240,178,50,.22)':'rgba(255,204,0,.32)','--hg':dark?'rgba(35,165,90,.22)':'rgba(52,199,89,.22)','--hb':mix(accent,dark?26:20,'transparent'),
+    '--hp':dark?'rgba(235,69,158,.2)':'rgba(255,55,95,.16)','--hv':dark?'rgba(155,89,182,.26)':'rgba(175,82,222,.18)','color-scheme':dark?'dark':'light'};
+}
+function applyCustom(on){
+  if(!CVARS) return;   // app.js can call this before this file has run; applyTheme() runs again below
+  const st=document.documentElement.style;
+  if(!on){ CVARS.forEach(k=>st.removeProperty(k)); return; }
+  for(const [k,v] of Object.entries(customVars())) st.setProperty(k,v);
+}
+function customEditorHTML(){
+  if(S.theme!=='custom') return '';
+  const c=custom(), row=(k,l)=>`<label class="srow"><span>${l}</span><span class="cpick"><code>${c[k]}</code><input type="color" data-ccol="${k}" value="${c[k]}" aria-label="${l} colour"></span></label>`;
+  return `<div class="sg">Your colours</div><div class="sbox">${row('bg','Page')}${row('ink','Text')}${row('accent','Accent')}${row('red','Red letters')}</div>
+    <div class="sg">Start from</div><div class="cpre">${CPRESETS.map(([n,p],i)=>`<button data-cpreset="${i}" title="${n}"><span style="background:${p.bg};color:${p.ink}">Aa<i style="background:${p.accent}"></i></span>${n}</button>`).join('')}</div>
+    <button class="pill" data-creset style="width:100%;margin-top:12px">Reset to Midnight</button>`;
+}
+function setCustom(c){ S.custom=c; save(); applyTheme(); syncPut('x-theme',{custom:c}); }
+$('#prefs').addEventListener('input',e=>{
+  const k=e.target.dataset&&e.target.dataset.ccol; if(!k) return;
+  S.custom=Object.assign(custom(),{[k]:e.target.value}); applyTheme();
+  const code=e.target.parentNode.querySelector('code'); if(code) code.textContent=e.target.value;
+  clearTimeout(setCustom.t); setCustom.t=setTimeout(()=>setCustom(S.custom),600);
+});
+applyTheme();
+
+// ---------- Offline (phone site) ----------
+// sw.js opens the app from the copy saved on the phone and checks GitHub in the background; when it saves a newer
+// version it tells us, and we offer a Reload. Settings shows whether this device has the app saved for offline use.
+var OFFLINE={state:window.MAC_APP?'mac':'checking',at:0};
+async function offlineCheck(){
+  if(window.MAC_APP) return;
+  if(!('serviceWorker' in navigator)||!window.caches||(location.protocol!=='https:'&&location.hostname!=='localhost')){ OFFLINE.state='none'; return; }
+  try{ const r=await caches.match('./index.html'); OFFLINE.state=r?'saved':'saving'; }catch(e){ OFFLINE.state='none'; }
+  if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});   // ask the phone not to clear it
+}
+function showUpdate(){
+  let u=$('#upd'); if(!u){ u=document.createElement('div'); u.id='upd'; document.body.appendChild(u); }
+  u.innerHTML='<span>A new version is ready</span><button data-reload>Reload</button><button data-x aria-label="Later">✕</button>';
+  u.onclick=e=>{ if(e.target.closest('[data-reload]')) location.reload(); else if(e.target.closest('[data-x]')) u.remove(); };
+}
+if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',e=>{
+  const d=e.data||{};
+  if(d.type==='updated'){ OFFLINE.state='saved'; showUpdate(); }
+  if(d.type==='checked'){ OFFLINE.at=Date.now(); OFFLINE.state='saved'; toast(d.offline?'No connection; using the saved copy':d.changed?'Updated':'You have the latest version'); if(d.changed) showUpdate(); if(PREFPAGE==='main'&&$('#prefs').classList.contains('open')) renderPrefs(); }
+});
+function offlineRowHTML(){
+  if(OFFLINE.state==='mac') return '';
+  const v={saved:'Saved on this phone ✓',saving:'Saving…',checking:'Checking…',none:'Add to Home Screen first'}[OFFLINE.state];
+  return `<div class="sg">This device</div><div class="sbox"><div class="srow"><span>Offline</span><span class="sv">${v}</span></div>
+    ${OFFLINE.state==='saved'?'<button class="srow nav" data-updcheck><span>Check for updates</span><span class="sv">'+CHEV_R+'</span></button>':''}</div>`;
+}
+$('#prefs').addEventListener('click',e=>{
+  if(!e.target.closest('[data-updcheck]')) return;
+  const sw=navigator.serviceWorker&&navigator.serviceWorker.controller; if(!sw) return toast('Not saved yet; try again in a moment');
+  toast('Checking…'); sw.postMessage('check');
+});
+offlineCheck();

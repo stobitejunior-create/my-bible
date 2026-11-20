@@ -264,3 +264,9 @@ Imported Bibles without marks get red letters/God's words from the KJV (`addMark
 LCS word alignment (archaic words and -eth/-s evened out) copies each KJV word's mark; unaligned words split at the import's
 quotation marks. On Ben's NKJV: 7,215/7,215 KJV-marked verses marked, 0 extra, ~0.2 s. Runs on import, and once
 (`fixImportMarks`, `m.marksTried`) for Bibles imported before.
+
+## Page turns (Settings → Page turn, `S.turn`)
+`turn(dir, fn, fromDx)` in extras.js copies #col into a fixed `.turnov` overlay over #scroll, runs `fn` (draws the new
+chapter), then animates both with the Web Animations API: slide (default), cover, book (3D rotateY), fade, none.
+The swipe handler moves #scroll with the finger (resists when there's no chapter that way) and calls
+`turn(d, ()=>rawStep(d), dx)`. #prev/#next, ←/→ and the end-of-chapter pills all go through `turn`. Reduce Motion = none.

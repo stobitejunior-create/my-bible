@@ -292,6 +292,27 @@ body.shuf-open{overflow:hidden}
 #prefs .gtints span{width:100%;height:36px;border-radius:10px;border:.5px solid rgba(128,128,128,.3);position:relative;overflow:hidden}
 #prefs .gtints span i{position:absolute;left:0;right:0;bottom:0;height:4px}
 #prefs .gtints button.on span{box-shadow:0 0 0 2px var(--accent)} #prefs .gtints button.on{color:var(--ink)}
+.turnov{position:fixed;z-index:4;overflow:hidden;background:var(--bg);pointer-events:none;will-change:transform}
+:root.glass .turnov{background:color-mix(in srgb,var(--gt) 14%,#f8f9fa)}
+.turnov .col{margin:0 auto}
+.turnshadow{box-shadow:0 0 40px rgba(0,0,0,.18)}
+#scroll.turnup{position:relative;z-index:5;background:var(--bg);box-shadow:-10px 0 40px rgba(0,0,0,.16)}
+#prefs .turns{display:grid;gap:6px;margin-top:6px}
+#prefs .turns button{display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;border:.5px solid var(--line);background:var(--card);border-radius:12px;padding:8px 10px}
+#prefs .turns button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+#prefs .turns b{font-size:14px;font-weight:600} #prefs .turns small{font-size:12px;color:var(--muted)}
+#prefs .tpv{grid-row:span 2;position:relative;width:52px;height:38px;border-radius:8px;background:var(--hover);overflow:hidden;perspective:120px}
+#prefs .tpv i{position:absolute;top:5px;bottom:5px;width:22px;border-radius:3px;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+#prefs .tpv i:first-child{left:5px} #prefs .tpv i:last-child{left:25px;background:color-mix(in srgb,var(--accent) 30%,var(--card))}
+#prefs .turns button:hover .t-slide i,#prefs .turns button.on .t-slide i{animation:tp-slide 1.6s ease-in-out infinite}
+#prefs .turns button:hover .t-cover i:last-child,#prefs .turns button.on .t-cover i:last-child{animation:tp-cover 1.6s ease-in-out infinite}
+#prefs .turns button:hover .t-book i:first-child,#prefs .turns button.on .t-book i:first-child{transform-origin:right center;animation:tp-book 1.6s ease-in-out infinite}
+#prefs .turns button:hover .t-fade i:last-child,#prefs .turns button.on .t-fade i:last-child{animation:tp-fade 1.6s ease-in-out infinite}
+@keyframes tp-slide{0%,20%{transform:none}60%,100%{transform:translateX(-20px)}}
+@keyframes tp-cover{0%,20%{transform:translateX(26px)}60%,100%{transform:none}}
+@keyframes tp-book{0%,20%{transform:none}70%,100%{transform:rotateY(150deg)}}
+@keyframes tp-fade{0%,20%{opacity:0}60%,100%{opacity:1}}
+#prefs .snote{font-size:12px;color:var(--muted);margin:10px 4px 0;line-height:1.45}
 #prefs .themes{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
 #prefs .themes button{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;border:.5px solid var(--line);background:var(--card);border-radius:12px;padding:8px 10px}
 #prefs .themes button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
@@ -1189,7 +1210,7 @@ function nextCh(d){
 function go(b,c,v){S.b=b;S.c=c;openBook=b;closePop();SELV=v||0;draw(v); if(v&&$('#bodyg').classList.contains('withpanel')) openPanel(v); else if(!v) closePanel();}
 $('#col').addEventListener('click',e=>{
   if(extrasClick(e)) return;
-  const p=e.target.closest('[data-go]'); if(p){const [b,c]=p.dataset.go.split(',').map(Number); go(b,c); return;}
+  const p=e.target.closest('[data-go]'); if(p){const [b,c]=p.dataset.go.split(',').map(Number); turn(b>S.b||(b===S.b&&c>S.c)?1:-1,()=>go(b,c)); return;}
   const w=e.target.closest('.w'); if(w&&!String(getSelection())){e.stopPropagation(); showPop(w.dataset.s.split(' '),w); return;}
   const one=e.target.closest('#one');
   if(one&&!searchMode){ if(String(getSelection())) return; if(e.target.closest('[data-opanel]')) return openPanel(ONE); if(e.target.closest('button,a')) return; stepVerse(e.clientX-one.getBoundingClientRect().left<one.offsetWidth/3?-1:1); return; }
@@ -1198,8 +1219,10 @@ $('#col').addEventListener('click',e=>{
   const r=e.target.closest('.res'); if(r){go(+r.dataset.b,+r.dataset.c,+r.dataset.v+1); return;}
   const v=e.target.closest('.v'); if(v&&!searchMode){ if(String(getSelection())) return; openPanel(+v.dataset.n); }
 });
-$('#prev').onclick=()=>{ if(oneMode()) return stepVerse(-1); const p=nextCh(-1); p&&go(p[0],p[1]); };
-$('#next').onclick=()=>{ if(oneMode()) return stepVerse(1); const p=nextCh(1); p&&go(p[0],p[1]); };
+// one step back or forward (a verse in one-verse layout, otherwise a chapter), without animation
+function rawStep(d){ if(oneMode()) return stepVerse(d); const p=nextCh(d); p&&go(p[0],p[1]); }
+$('#prev').onclick=()=>{ if(oneMode()||nextCh(-1)) turn(-1,()=>rawStep(-1)); };
+$('#next').onclick=()=>{ if(oneMode()||nextCh(1)) turn(1,()=>rawStep(1)); };
 $('#ver').onclick=async e=>{
   const b=e.target.closest('button'); if(!b||b.dataset.v===S.v) return;
   const v=b.dataset.v; document.body.style.cursor='progress'; await load(v); document.body.style.cursor='';
@@ -1453,10 +1476,7 @@ $('#menup').onclick=e=>{
   else if('addimp' in b.dataset) saveImport($('#impName').value,$('#impAbbr').value);
 };
 
-// Swipe left/right on phones to change chapter
-{ let x0=null,y0=0; $('#scroll').addEventListener('touchstart',e=>{ const t=e.touches[0]; x0=t.clientX; y0=t.clientY; },{passive:true});
-  $('#scroll').addEventListener('touchend',e=>{ if(x0==null) return; const t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0; x0=null;
-    if(Math.abs(dx)>80&&Math.abs(dy)<45&&!String(getSelection())) (dx<0?$('#next'):$('#prev')).click(); },{passive:true}); }
+// Swipe left/right to change chapter: see the page-turn code in extras.js
 
 // ---------- Version menu ----------
 // The NKJV is copyrighted, so it isn't bundled; these links open it (with Strong's) on Blue Letter Bible, which is licensed.
@@ -1514,6 +1534,11 @@ function renderPrefs(){
     el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>(k==='custom'&&([bg,ink]=[custom().bg,custom().ink]),k.endsWith('glass')&&(bg=glassSW(glassTint())),`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`)).join('')}</div>`+(S.theme.endsWith('glass')?`<div class="sg">Glass colour</div><div class="gtints">${GLASS_TINTS.map(t=>`<button data-gtint="${t[0]}" class="${glassTint()[0]===t[0]?'on':''}"><span style="background:${glassSW(t)}"><i style="background:${t[3]}"></i></span>${t[1]}</button>`).join('')}</div>`:'')+customEditorHTML();
     return;
   }
+  if(PREFPAGE==='turn'){
+    el.innerHTML=back('Page turn')+`<div class="turns">${TURNS.map(([k,n,sub])=>`<button data-turn="${k}" class="${(S.turn||'slide')===k?'on':''}"><span class="tpv t-${k}"><i></i><i></i></span><b>${n}</b><small>${sub}</small></button>`).join('')}</div>
+      <p class="snote">Swipe left or right on the text, tap the arrows, or use ← → on a keyboard.${matchMedia('(prefers-reduced-motion:reduce)').matches?' Reduce Motion is on in your device settings, so pages change without moving.':''}</p>`;
+    return;
+  }
   if(PREFPAGE==='heading'){
     const pv={dropcap:`<div style="display:flex;gap:5px;align-items:flex-start"><span style="font-size:26px;font-weight:300;line-height:.9">${S.c+1}</span><span style="display:flex;flex-direction:column;gap:3px;padding-top:3px;flex:1"><i class="ln"></i><i class="ln"></i></span></div>`,
       refined:`<div style="font-size:12px">${NAMES[S.b]}</div><div style="font-size:26px;font-weight:300">${S.c+1}</div>`,
@@ -1536,6 +1561,7 @@ function renderPrefs(){
     <div class="sg">Page</div>
     <div class="sbox">
       <div class="srow"><span>Layout</span>${seg('layout',S.layout,[['verse','Verses'],['para','Paragraph'],['one','One verse']])}</div>
+      <button class="srow nav" data-page="turn"><span>Page turn</span><span class="sv">${(TURNS.find(t=>t[0]===(S.turn||'slide'))||TURNS[0])[1]}${CHEV_R}</span></button>
       <button class="srow nav" data-page="heading"><span>Chapter heading</span><span class="sv">${(HEADS.find(h=>h[0]===S.hs)||HEADS[0])[1]}${CHEV_R}</span></button>
       <button class="srow nav" data-page="theme"><span>Appearance</span><span class="sv">${(THEMES.find(t=>t[0]===S.theme)||THEMES[0])[1]}${CHEV_R}</span></button>
     </div>${offlineRowHTML()}`;
@@ -1548,6 +1574,7 @@ $('#prefs').onclick=async e=>{
   if(b.dataset.page){ PREFPAGE=b.dataset.page; renderPrefs(); $('#prefs').scrollTop=0; return; }
   if(b.dataset.theme){ S.theme=b.dataset.theme; }
   if(b.dataset.gtint){ S.glass=b.dataset.gtint; save(); applyTheme(); syncPut('x-theme',{custom:custom(),glass:S.glass}); keep(); return; }
+  if(b.dataset.turn){ S.turn=b.dataset.turn; save(); keep(); if(!searchMode) setTimeout(()=>turn(1,()=>{}),60); return; }
   if(b.dataset.cpreset){ setCustom({...CPRESETS[+b.dataset.cpreset][1]}); keep(); return; }
   if('creset' in b.dataset){ setCustom({...CUSTOM_DEF}); keep(); return; }
   if(b.dataset.layout){ const fv=oneMode()?ONE:firstVisibleVerse(); S.layout=b.dataset.layout; if(S.layout==='one'){ ONE=fv||1; ONEKEY=S.b+'.'+S.c; } save(); if(!searchMode) draw(S.layout==='one'?ONE:(fv>1?fv:0)); }
@@ -2713,6 +2740,70 @@ async function fixImportMarks(){
   }
 }
 setTimeout(()=>fixImportMarks().catch(()=>{}),2500);
+
+// ---------- Page turns (Settings → Page turn) ----------
+// Changing chapter animates: the old page is copied into an overlay over the reading area, the new chapter is drawn
+// underneath, and the two move according to the style. On phones the page follows your finger while you swipe.
+var TURNS=[['slide','Slide','Pages slide side by side, like a reading app'],['cover','Cover','The new page slides over the old one'],
+  ['book','Book','The page turns like paper'],['fade','Fade','A soft cross-fade'],['none','None','Change straight away']];
+const turnStyle=()=>matchMedia('(prefers-reduced-motion:reduce)').matches?'none':(S.turn||'slide');
+let TURNING=null;
+function turn(dir,fn,fromDx){
+  const sc=$('#scroll'), style=turnStyle();
+  if(TURNING){ TURNING(); }
+  if(style==='none'||searchMode){ sc.style.transform=''; fn(); return; }
+  const r=sc.getBoundingClientRect(), W=r.width, dx=fromDx||0;
+  const ov=document.createElement('div'); ov.className='turnov';
+  ov.style.cssText=`left:${r.left}px;top:${r.top}px;width:${W}px;height:${r.height}px`;
+  const cl=$('#col').cloneNode(true);   // ids kept so the copy is styled the same; it sits after the real page, so lookups still find the real one
+  cl.style.transform=`translateY(${-sc.scrollTop}px)`; ov.appendChild(cl); document.body.appendChild(ov);
+  sc.style.transform=''; fn();
+  const ease='cubic-bezier(.22,.8,.24,1)', T=style==='book'?520:style==='fade'?260:340, o={duration:T,easing:ease,fill:'both'};
+  const s=dir>0?1:-1; let a1, a2;
+  if(style==='slide'){
+    a1=ov.animate([{transform:`translateX(${dx}px)`},{transform:`translateX(${-s*W}px)`}],o);
+    a2=sc.animate([{transform:`translateX(${s*W+dx}px)`},{transform:'translateX(0)'}],o);
+  } else if(style==='cover'){
+    if(s>0){ ov.style.zIndex=3; sc.classList.add('turnup');
+      a1=ov.animate([{transform:`translateX(${dx*.3}px)`,filter:'brightness(1)'},{transform:`translateX(${-W*.25}px)`,filter:'brightness(.86)'}],o);
+      a2=sc.animate([{transform:`translateX(${W+dx}px)`},{transform:'translateX(0)'}],o);
+    } else { ov.classList.add('turnshadow');
+      a1=ov.animate([{transform:`translateX(${dx}px)`},{transform:`translateX(${W}px)`}],o);
+      a2=sc.animate([{transform:`translateX(${-W*.25+dx*.3}px)`,filter:'brightness(.86)'},{transform:'translateX(0)',filter:'brightness(1)'}],o);
+    }
+  } else if(style==='book'){
+    ov.style.transformOrigin=s>0?'left center':'right center'; ov.classList.add('turnshadow');
+    const start=-s*Math.min(80,Math.abs(dx)/W*120);
+    a1=ov.animate([{transform:`perspective(1600px) rotateY(${start}deg)`,filter:'brightness(1)'},{transform:`perspective(1600px) rotateY(${-s*92}deg)`,filter:'brightness(.72)'}],{...o,easing:'cubic-bezier(.45,.05,.3,1)'});
+    a2=sc.animate([{filter:'brightness(.82)'},{filter:'brightness(1)'}],o);
+  } else {
+    a1=ov.animate([{opacity:1,transform:`translateX(${dx}px)`},{opacity:0,transform:`translateX(${dx-s*24}px)`}],o);
+    a2=sc.animate([{opacity:0,transform:`translateX(${s*24}px)`},{opacity:1,transform:'translateX(0)'}],o);
+  }
+  const done=()=>{ if(TURNING!==done) return; TURNING=null; ov.remove(); a2.cancel(); sc.classList.remove('turnup'); };
+  TURNING=done; a1.onfinish=done; setTimeout(done,T+200);
+}
+// swipe: the page follows the finger, then turns (or springs back)
+{
+  const sc=$('#scroll'); let x0=null, y0=0, t0=0, drag=false, dx=0;
+  const canGo=d=>oneMode()||!!nextCh(d);
+  sc.addEventListener('touchstart',e=>{ if(e.touches.length>1||searchMode){ x0=null; return; } const t=e.touches[0]; x0=t.clientX; y0=t.clientY; t0=Date.now(); drag=false; dx=0; },{passive:true});
+  sc.addEventListener('touchmove',e=>{
+    if(x0==null) return; const t=e.touches[0], mx=t.clientX-x0, my=t.clientY-y0;
+    if(!drag){ if(Math.abs(mx)>12&&Math.abs(mx)>Math.abs(my)*1.6&&!String(getSelection())) drag=true; else { if(Math.abs(my)>14) x0=null; return; } }
+    e.preventDefault(); dx=mx;
+    if(!canGo(dx<0?1:-1)) dx=mx/4;                                         // nothing that way: resist
+    if(turnStyle()!=='none') sc.style.transform=`translateX(${turnStyle()==='book'||turnStyle()==='fade'?dx*.35:dx}px)`;
+  },{passive:false});
+  const end=()=>{
+    if(x0==null) return; x0=null; if(!drag) return;
+    const v=Math.abs(dx)/Math.max(1,Date.now()-t0), d=dx<0?1:-1, shown=turnStyle()==='book'||turnStyle()==='fade'?dx*.35:dx;
+    if((Math.abs(dx)>70||(v>.5&&Math.abs(dx)>30))&&canGo(d)){
+      turn(d,()=>rawStep(d),shown);
+    } else if(shown){ sc.animate([{transform:`translateX(${shown}px)`},{transform:'translateX(0)'}],{duration:260,easing:'cubic-bezier(.22,.8,.24,1)'}); sc.style.transform=''; }
+  };
+  sc.addEventListener('touchend',end,{passive:true}); sc.addEventListener('touchcancel',end,{passive:true});
+}
 
 </script>
 </body>

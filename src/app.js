@@ -260,7 +260,7 @@ function nextCh(d){
 function go(b,c,v){S.b=b;S.c=c;openBook=b;closePop();SELV=v||0;draw(v); if(v&&$('#bodyg').classList.contains('withpanel')) openPanel(v); else if(!v) closePanel();}
 $('#col').addEventListener('click',e=>{
   if(extrasClick(e)) return;
-  const p=e.target.closest('[data-go]'); if(p){const [b,c]=p.dataset.go.split(',').map(Number); go(b,c); return;}
+  const p=e.target.closest('[data-go]'); if(p){const [b,c]=p.dataset.go.split(',').map(Number); turn(b>S.b||(b===S.b&&c>S.c)?1:-1,()=>go(b,c)); return;}
   const w=e.target.closest('.w'); if(w&&!String(getSelection())){e.stopPropagation(); showPop(w.dataset.s.split(' '),w); return;}
   const one=e.target.closest('#one');
   if(one&&!searchMode){ if(String(getSelection())) return; if(e.target.closest('[data-opanel]')) return openPanel(ONE); if(e.target.closest('button,a')) return; stepVerse(e.clientX-one.getBoundingClientRect().left<one.offsetWidth/3?-1:1); return; }
@@ -269,8 +269,10 @@ $('#col').addEventListener('click',e=>{
   const r=e.target.closest('.res'); if(r){go(+r.dataset.b,+r.dataset.c,+r.dataset.v+1); return;}
   const v=e.target.closest('.v'); if(v&&!searchMode){ if(String(getSelection())) return; openPanel(+v.dataset.n); }
 });
-$('#prev').onclick=()=>{ if(oneMode()) return stepVerse(-1); const p=nextCh(-1); p&&go(p[0],p[1]); };
-$('#next').onclick=()=>{ if(oneMode()) return stepVerse(1); const p=nextCh(1); p&&go(p[0],p[1]); };
+// one step back or forward (a verse in one-verse layout, otherwise a chapter), without animation
+function rawStep(d){ if(oneMode()) return stepVerse(d); const p=nextCh(d); p&&go(p[0],p[1]); }
+$('#prev').onclick=()=>{ if(oneMode()||nextCh(-1)) turn(-1,()=>rawStep(-1)); };
+$('#next').onclick=()=>{ if(oneMode()||nextCh(1)) turn(1,()=>rawStep(1)); };
 $('#ver').onclick=async e=>{
   const b=e.target.closest('button'); if(!b||b.dataset.v===S.v) return;
   const v=b.dataset.v; document.body.style.cursor='progress'; await load(v); document.body.style.cursor='';
@@ -524,10 +526,7 @@ $('#menup').onclick=e=>{
   else if('addimp' in b.dataset) saveImport($('#impName').value,$('#impAbbr').value);
 };
 
-// Swipe left/right on phones to change chapter
-{ let x0=null,y0=0; $('#scroll').addEventListener('touchstart',e=>{ const t=e.touches[0]; x0=t.clientX; y0=t.clientY; },{passive:true});
-  $('#scroll').addEventListener('touchend',e=>{ if(x0==null) return; const t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0; x0=null;
-    if(Math.abs(dx)>80&&Math.abs(dy)<45&&!String(getSelection())) (dx<0?$('#next'):$('#prev')).click(); },{passive:true}); }
+// Swipe left/right to change chapter: see the page-turn code in extras.js
 
 // ---------- Version menu ----------
 // The NKJV is copyrighted, so it isn't bundled; these links open it (with Strong's) on Blue Letter Bible, which is licensed.
@@ -585,6 +584,11 @@ function renderPrefs(){
     el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>(k==='custom'&&([bg,ink]=[custom().bg,custom().ink]),k.endsWith('glass')&&(bg=glassSW(glassTint())),`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`)).join('')}</div>`+(S.theme.endsWith('glass')?`<div class="sg">Glass colour</div><div class="gtints">${GLASS_TINTS.map(t=>`<button data-gtint="${t[0]}" class="${glassTint()[0]===t[0]?'on':''}"><span style="background:${glassSW(t)}"><i style="background:${t[3]}"></i></span>${t[1]}</button>`).join('')}</div>`:'')+customEditorHTML();
     return;
   }
+  if(PREFPAGE==='turn'){
+    el.innerHTML=back('Page turn')+`<div class="turns">${TURNS.map(([k,n,sub])=>`<button data-turn="${k}" class="${(S.turn||'slide')===k?'on':''}"><span class="tpv t-${k}"><i></i><i></i></span><b>${n}</b><small>${sub}</small></button>`).join('')}</div>
+      <p class="snote">Swipe left or right on the text, tap the arrows, or use ← → on a keyboard.${matchMedia('(prefers-reduced-motion:reduce)').matches?' Reduce Motion is on in your device settings, so pages change without moving.':''}</p>`;
+    return;
+  }
   if(PREFPAGE==='heading'){
     const pv={dropcap:`<div style="display:flex;gap:5px;align-items:flex-start"><span style="font-size:26px;font-weight:300;line-height:.9">${S.c+1}</span><span style="display:flex;flex-direction:column;gap:3px;padding-top:3px;flex:1"><i class="ln"></i><i class="ln"></i></span></div>`,
       refined:`<div style="font-size:12px">${NAMES[S.b]}</div><div style="font-size:26px;font-weight:300">${S.c+1}</div>`,
@@ -607,6 +611,7 @@ function renderPrefs(){
     <div class="sg">Page</div>
     <div class="sbox">
       <div class="srow"><span>Layout</span>${seg('layout',S.layout,[['verse','Verses'],['para','Paragraph'],['one','One verse']])}</div>
+      <button class="srow nav" data-page="turn"><span>Page turn</span><span class="sv">${(TURNS.find(t=>t[0]===(S.turn||'slide'))||TURNS[0])[1]}${CHEV_R}</span></button>
       <button class="srow nav" data-page="heading"><span>Chapter heading</span><span class="sv">${(HEADS.find(h=>h[0]===S.hs)||HEADS[0])[1]}${CHEV_R}</span></button>
       <button class="srow nav" data-page="theme"><span>Appearance</span><span class="sv">${(THEMES.find(t=>t[0]===S.theme)||THEMES[0])[1]}${CHEV_R}</span></button>
     </div>${offlineRowHTML()}`;
@@ -619,6 +624,7 @@ $('#prefs').onclick=async e=>{
   if(b.dataset.page){ PREFPAGE=b.dataset.page; renderPrefs(); $('#prefs').scrollTop=0; return; }
   if(b.dataset.theme){ S.theme=b.dataset.theme; }
   if(b.dataset.gtint){ S.glass=b.dataset.gtint; save(); applyTheme(); syncPut('x-theme',{custom:custom(),glass:S.glass}); keep(); return; }
+  if(b.dataset.turn){ S.turn=b.dataset.turn; save(); keep(); if(!searchMode) setTimeout(()=>turn(1,()=>{}),60); return; }
   if(b.dataset.cpreset){ setCustom({...CPRESETS[+b.dataset.cpreset][1]}); keep(); return; }
   if('creset' in b.dataset){ setCustom({...CUSTOM_DEF}); keep(); return; }
   if(b.dataset.layout){ const fv=oneMode()?ONE:firstVisibleVerse(); S.layout=b.dataset.layout; if(S.layout==='one'){ ONE=fv||1; ONEKEY=S.b+'.'+S.c; } save(); if(!searchMode) draw(S.layout==='one'?ONE:(fv>1?fv:0)); }

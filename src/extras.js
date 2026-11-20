@@ -580,3 +580,67 @@ async function fixImportMarks(){
   }
 }
 setTimeout(()=>fixImportMarks().catch(()=>{}),2500);
+
+// ---------- Page turns (Settings → Page turn) ----------
+// Changing chapter animates: the old page is copied into an overlay over the reading area, the new chapter is drawn
+// underneath, and the two move according to the style. On phones the page follows your finger while you swipe.
+var TURNS=[['slide','Slide','Pages slide side by side, like a reading app'],['cover','Cover','The new page slides over the old one'],
+  ['book','Book','The page turns like paper'],['fade','Fade','A soft cross-fade'],['none','None','Change straight away']];
+const turnStyle=()=>matchMedia('(prefers-reduced-motion:reduce)').matches?'none':(S.turn||'slide');
+let TURNING=null;
+function turn(dir,fn,fromDx){
+  const sc=$('#scroll'), style=turnStyle();
+  if(TURNING){ TURNING(); }
+  if(style==='none'||searchMode){ sc.style.transform=''; fn(); return; }
+  const r=sc.getBoundingClientRect(), W=r.width, dx=fromDx||0;
+  const ov=document.createElement('div'); ov.className='turnov';
+  ov.style.cssText=`left:${r.left}px;top:${r.top}px;width:${W}px;height:${r.height}px`;
+  const cl=$('#col').cloneNode(true);   // ids kept so the copy is styled the same; it sits after the real page, so lookups still find the real one
+  cl.style.transform=`translateY(${-sc.scrollTop}px)`; ov.appendChild(cl); document.body.appendChild(ov);
+  sc.style.transform=''; fn();
+  const ease='cubic-bezier(.22,.8,.24,1)', T=style==='book'?520:style==='fade'?260:340, o={duration:T,easing:ease,fill:'both'};
+  const s=dir>0?1:-1; let a1, a2;
+  if(style==='slide'){
+    a1=ov.animate([{transform:`translateX(${dx}px)`},{transform:`translateX(${-s*W}px)`}],o);
+    a2=sc.animate([{transform:`translateX(${s*W+dx}px)`},{transform:'translateX(0)'}],o);
+  } else if(style==='cover'){
+    if(s>0){ ov.style.zIndex=3; sc.classList.add('turnup');
+      a1=ov.animate([{transform:`translateX(${dx*.3}px)`,filter:'brightness(1)'},{transform:`translateX(${-W*.25}px)`,filter:'brightness(.86)'}],o);
+      a2=sc.animate([{transform:`translateX(${W+dx}px)`},{transform:'translateX(0)'}],o);
+    } else { ov.classList.add('turnshadow');
+      a1=ov.animate([{transform:`translateX(${dx}px)`},{transform:`translateX(${W}px)`}],o);
+      a2=sc.animate([{transform:`translateX(${-W*.25+dx*.3}px)`,filter:'brightness(.86)'},{transform:'translateX(0)',filter:'brightness(1)'}],o);
+    }
+  } else if(style==='book'){
+    ov.style.transformOrigin=s>0?'left center':'right center'; ov.classList.add('turnshadow');
+    const start=-s*Math.min(80,Math.abs(dx)/W*120);
+    a1=ov.animate([{transform:`perspective(1600px) rotateY(${start}deg)`,filter:'brightness(1)'},{transform:`perspective(1600px) rotateY(${-s*92}deg)`,filter:'brightness(.72)'}],{...o,easing:'cubic-bezier(.45,.05,.3,1)'});
+    a2=sc.animate([{filter:'brightness(.82)'},{filter:'brightness(1)'}],o);
+  } else {
+    a1=ov.animate([{opacity:1,transform:`translateX(${dx}px)`},{opacity:0,transform:`translateX(${dx-s*24}px)`}],o);
+    a2=sc.animate([{opacity:0,transform:`translateX(${s*24}px)`},{opacity:1,transform:'translateX(0)'}],o);
+  }
+  const done=()=>{ if(TURNING!==done) return; TURNING=null; ov.remove(); a2.cancel(); sc.classList.remove('turnup'); };
+  TURNING=done; a1.onfinish=done; setTimeout(done,T+200);
+}
+// swipe: the page follows the finger, then turns (or springs back)
+{
+  const sc=$('#scroll'); let x0=null, y0=0, t0=0, drag=false, dx=0;
+  const canGo=d=>oneMode()||!!nextCh(d);
+  sc.addEventListener('touchstart',e=>{ if(e.touches.length>1||searchMode){ x0=null; return; } const t=e.touches[0]; x0=t.clientX; y0=t.clientY; t0=Date.now(); drag=false; dx=0; },{passive:true});
+  sc.addEventListener('touchmove',e=>{
+    if(x0==null) return; const t=e.touches[0], mx=t.clientX-x0, my=t.clientY-y0;
+    if(!drag){ if(Math.abs(mx)>12&&Math.abs(mx)>Math.abs(my)*1.6&&!String(getSelection())) drag=true; else { if(Math.abs(my)>14) x0=null; return; } }
+    e.preventDefault(); dx=mx;
+    if(!canGo(dx<0?1:-1)) dx=mx/4;                                         // nothing that way: resist
+    if(turnStyle()!=='none') sc.style.transform=`translateX(${turnStyle()==='book'||turnStyle()==='fade'?dx*.35:dx}px)`;
+  },{passive:false});
+  const end=()=>{
+    if(x0==null) return; x0=null; if(!drag) return;
+    const v=Math.abs(dx)/Math.max(1,Date.now()-t0), d=dx<0?1:-1, shown=turnStyle()==='book'||turnStyle()==='fade'?dx*.35:dx;
+    if((Math.abs(dx)>70||(v>.5&&Math.abs(dx)>30))&&canGo(d)){
+      turn(d,()=>rawStep(d),shown);
+    } else if(shown){ sc.animate([{transform:`translateX(${shown}px)`},{transform:'translateX(0)'}],{duration:260,easing:'cubic-bezier(.22,.8,.24,1)'}); sc.style.transform=''; }
+  };
+  sc.addEventListener('touchend',end,{passive:true}); sc.addEventListener('touchcancel',end,{passive:true});
+}

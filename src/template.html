@@ -14,13 +14,13 @@
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --bg:#1c1c1e; --side:#232325; --bar:rgba(28,28,30,.78); --ink:#f2f2f7; --muted:#98989f; --faint:#636366;
-  --line:rgba(255,255,255,.09); --hover:rgba(255,255,255,.06); --sel:#3a3a3c; --accent:#0a84ff; --red:#ff6b6b; --sn:#7c7c82;
-  --mark:rgba(255,214,10,.28); --flash:rgba(10,132,255,.16); --card:#2c2c2e; --segon:#636366; --shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.1); color-scheme:dark;}}
+  --bg:#313338; --side:#232428; --bar:rgba(49,51,56,.86); --ink:#dbdee1; --muted:#949ba4; --faint:#6d6f78;
+  --line:rgba(255,255,255,.06); --hover:rgba(255,255,255,.05); --sel:#404249; --accent:#7983f5; --red:#f0888b; --sn:#80848e;
+  --mark:rgba(240,178,50,.24); --flash:rgba(88,101,242,.18); --card:#2b2d31; --segon:#4e5058; --shadow:0 12px 40px rgba(0,0,0,.42),0 0 0 .5px rgba(0,0,0,.35); color-scheme:dark;}}
 :root[data-theme="dark"]{
-  --bg:#1c1c1e; --side:#232325; --bar:rgba(28,28,30,.78); --ink:#f2f2f7; --muted:#98989f; --faint:#636366;
-  --line:rgba(255,255,255,.09); --hover:rgba(255,255,255,.06); --sel:#3a3a3c; --accent:#0a84ff; --red:#ff6b6b; --sn:#7c7c82;
-  --mark:rgba(255,214,10,.28); --flash:rgba(10,132,255,.16); --card:#2c2c2e; --segon:#636366; --shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.1); color-scheme:dark;}
+  --bg:#313338; --side:#232428; --bar:rgba(49,51,56,.86); --ink:#dbdee1; --muted:#949ba4; --faint:#6d6f78;
+  --line:rgba(255,255,255,.06); --hover:rgba(255,255,255,.05); --sel:#404249; --accent:#7983f5; --red:#f0888b; --sn:#80848e;
+  --mark:rgba(240,178,50,.24); --flash:rgba(88,101,242,.18); --card:#2b2d31; --segon:#4e5058; --shadow:0 12px 40px rgba(0,0,0,.42),0 0 0 .5px rgba(0,0,0,.35); color-scheme:dark;}
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%;overscroll-behavior:none}
 body.sheet-open,body.nav-open{overflow:hidden}
@@ -214,8 +214,8 @@ body.nav-open .ref .cv{transform:rotate(180deg)}
 @keyframes oin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 /* verse shuffle (full screen, like Stobite TV) */
 :root{--shbg:#f4f1ea}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--shbg:#0b0c0f}}
-:root[data-theme="dark"]{--shbg:#0b0c0f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--shbg:#1e1f22}}
+:root[data-theme="dark"]{--shbg:#1e1f22}
 #shuf{position:fixed;inset:0;z-index:95;background:var(--shbg);color:var(--ink);display:none;align-items:center;justify-content:center;padding:calc(48px + env(safe-area-inset-top)) 7vw calc(100px + env(safe-area-inset-bottom));cursor:pointer;user-select:none;-webkit-user-select:none}
 #shuf.open{display:flex}
 #shuf.idle{cursor:none} #shuf.idle .sctl{opacity:0;pointer-events:none}
@@ -253,6 +253,20 @@ body.shuf-open{overflow:hidden}
   --line:rgba(255,255,255,.1); --hover:rgba(255,255,255,.07); --sel:#2a2a2d; --accent:#0a84ff; --red:#ff6b6b; --sn:#6c6c70;
   --mark:rgba(255,214,10,.25); --flash:rgba(10,132,255,.18); --card:#141416; --segon:#3a3a3c; --shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 .5px rgba(255,255,255,.12);
   --hy:rgba(255,214,10,.22); --hg:rgba(48,209,88,.2); --hb:rgba(10,132,255,.24); --hp:rgba(255,55,95,.22); --hv:rgba(191,90,242,.24); --shbg:#000000; color-scheme:dark}
+/* Glass (Settings → Appearance): soft blue wash behind frosted white panels, like the Stobite CRM's light look */
+:root.glass{
+  --bg:#f1f4f8; --side:rgba(255,255,255,.62); --bar:rgba(255,255,255,.58); --ink:#1b2431; --muted:#687384; --faint:#a3acb9;
+  --line:rgba(30,50,80,.08); --hover:rgba(30,50,80,.05); --sel:rgba(58,114,216,.12); --accent:#2f62c9; --red:#b3261e; --sn:#8592a3;
+  --mark:rgba(255,204,0,.32); --flash:rgba(58,114,216,.1); --card:rgba(255,255,255,.74); --segon:#ffffff;
+  --shadow:0 1px 2px rgba(30,50,80,.05),0 20px 48px -18px rgba(30,50,80,.32),inset 0 0 0 1px rgba(255,255,255,.85);
+  --hy:rgba(255,204,0,.3);--hg:rgba(52,199,89,.2);--hb:rgba(58,114,216,.18);--hp:rgba(255,55,95,.15);--hv:rgba(175,82,222,.16);
+  --shbg:#eef3fa; color-scheme:light}
+:root.glass body{background:radial-gradient(1100px 620px at 92% -8%,rgba(185,207,244,.6),transparent 70%),radial-gradient(900px 520px at -5% 8%,rgba(185,207,244,.34),transparent 70%),linear-gradient(180deg,#f2f6fb,#f1f4f8 55%);background-attachment:fixed}
+:root.glass :is(.bar,.sheet,#menup,#verp,#navp,#planp,#syncp,#pop,#panel,#cont,#toast,#memo .mcard){-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%)}
+:root.glass .bar{border-bottom-color:rgba(255,255,255,.7);box-shadow:0 1px 0 rgba(30,50,80,.05)}
+:root.glass #panel{background:rgba(255,255,255,.66)}
+:root.glass #scrim{background:rgba(30,50,80,.12)}
+:root.glass #prefs .sbox,:root.glass #prefs .themes button{box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 1px 2px rgba(30,50,80,.04)}
 #prefs .themes{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
 #prefs .themes button{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;border:.5px solid var(--line);background:var(--card);border-radius:12px;padding:8px 10px}
 #prefs .themes button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
@@ -482,8 +496,8 @@ mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 
 /* highlights */
 :root{--hy:rgba(255,214,10,.32);--hg:rgba(52,199,89,.22);--hb:rgba(10,132,255,.18);--hp:rgba(255,55,95,.16);--hv:rgba(175,82,222,.18)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hy:rgba(255,214,10,.22);--hg:rgba(48,209,88,.2);--hb:rgba(10,132,255,.24);--hp:rgba(255,55,95,.22);--hv:rgba(191,90,242,.24)}}
-:root[data-theme="dark"]{--hy:rgba(255,214,10,.22);--hg:rgba(48,209,88,.2);--hb:rgba(10,132,255,.24);--hp:rgba(255,55,95,.22);--hv:rgba(191,90,242,.24)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="black"]){--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26)}}
+:root[data-theme="dark"]{--hy:rgba(240,178,50,.22);--hg:rgba(35,165,90,.22);--hb:rgba(88,101,242,.26);--hp:rgba(235,69,158,.2);--hv:rgba(155,89,182,.26)}
 .v{cursor:default}
 .v:hover{background:var(--hover)}
 .v.sel{box-shadow:inset 0 0 0 1.5px var(--accent)}

@@ -168,8 +168,8 @@ function syncControls(){
   document.documentElement.style.setProperty('--lh',SPACING[S.lh]||1.72);
   document.body.classList.toggle('showred',S.red);
   document.documentElement.style.setProperty('--fs',S.fs+'px');
-  const th=S.theme; if(th==='auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme',th);
-  $('#theme').title='Appearance: '+({auto:'automatic',light:'light',dark:'dark'})[th];
+  applyTheme();
+  $('#theme').title='Appearance: '+(THEMES.find(t=>t[0]===S.theme)||THEMES[0])[1];
 }
 
 function draw(flashV){
@@ -542,7 +542,8 @@ function headHTML(style,b,c,v){
 }
 // Settings: a short main page in three sections, with Font and Chapter heading as their own pages.
 let PREFPAGE='main';
-const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['light','Light','White paper','#ffffff','#1d1d1f'],['dark','Dark','Dark grey','#1c1c1e','#f2f2f7'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea']];
+const GLASS_SW='radial-gradient(80% 90% at 90% 0%,#b9cff4,transparent 70%),linear-gradient(160deg,#f7f9fc,#e6edf7)';
+const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft blue wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea']];
 const CHEV_R='<svg class="chv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 2.5 3.5 3.5-3.5 3.5"/></svg>';
 function renderPrefs(){
   const el=$('#prefs');
@@ -557,7 +558,7 @@ function renderPrefs(){
     return;
   }
   if(PREFPAGE==='theme'){
-    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k==='auto'?'<i style="background:#1c1c1e"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`).join('')}</div>`;
+    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`).join('')}</div>`;
     return;
   }
   if(PREFPAGE==='heading'){
@@ -694,7 +695,14 @@ $('#randp').onclick=e=>{
   }
 };
 $('#randp').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='cnt') $('#randp [data-setc]').click(); });
-$('#theme').onclick=()=>{S.theme={auto:'light',light:'dark',dark:'sepia',sepia:'black',black:'auto'}[S.theme]||'auto'; syncControls(); save();};
+$('#theme').onclick=()=>{ const i=THEMES.findIndex(t=>t[0]===S.theme); S.theme=THEMES[(i+1)%THEMES.length][0]; syncControls(); save();};
+// Glass is a light look: 'glass' always, 'autoglass' only while the system is light (it goes to the dark theme at night).
+function applyTheme(){
+  const th=S.theme, root=document.documentElement;
+  if(th==='auto'||th==='autoglass') root.removeAttribute('data-theme'); else root.setAttribute('data-theme',th==='glass'?'light':th);
+  root.classList.toggle('glass',th==='glass'||(th==='autoglass'&&!matchMedia('(prefers-color-scheme:dark)').matches));
+}
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applyTheme());
 // The toolbar slides away while reading down the page and returns when scrolling up.
 { let last=0; $('#scroll').addEventListener('scroll',()=>{
     const y=$('#scroll').scrollTop, bar=$('#bar'), d=y-last; last=y;

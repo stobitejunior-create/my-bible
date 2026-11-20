@@ -241,3 +241,8 @@ Earlier ideas still open:
 - Review verses with two speakers.
 - About 36 KJV verses still end mid-sentence, 24 of them in Psalms with titles, where the end-of-verse restoration missed. For example, Ps 3:1 ends "…they that rise up" without "against me". Some flagged verses legitimately continue into the next verse, such as Gen 23:17.
 - Red letters and God's words for the BLB, perhaps transferred from the BSB, since the two share a translation committee.
+
+## Themes (Settings → Appearance)
+`THEMES` in src/app.js: auto, autoglass, light, glass, dark, sepia, black. `applyTheme()` sets `data-theme` and the `glass` class on <html>
+(glass = light tokens + `:root.glass` frosted panels on a blue wash, modelled on the Stobite CRM's light look; autoglass drops the
+class when the system is dark). Dark uses Discord-like soft colours (#313338 page, #2b2d31 cards, #dbdee1 text, #7983f5 accent).

@@ -229,7 +229,7 @@ function applyRemote(rows,first){
     else if(r.id==='x-history'){ HIST=mergeHist(HIST,d&&d.list||[]); store.set('history',HIST); other=true; }
     else if(r.id==='x-mem'){ MEM=first?[...(d&&d.list||[]),...MEM.filter(x=>!(d&&d.list||[]).some(y=>y.b===x.b&&y.c===x.c&&y.v===x.v))]:(d&&d.list||[]); store.set('mem',MEM); other=true; }
     else if(r.id==='x-pos'&&d) remotePos(d);
-    else if(r.id==='x-theme'&&d&&d.custom){ S.custom=d.custom; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
+    else if(r.id==='x-theme'&&d&&(d.custom||d.glass)){ if(d.custom) S.custom=d.custom; if(d.glass) S.glass=d.glass; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
   }
   store.set('outbox',OUTBOX);
   if(marks){ store.set('marks',MARKS); applyMarks(); }
@@ -408,7 +408,7 @@ function customEditorHTML(){
     <div class="sg">Start from</div><div class="cpre">${CPRESETS.map(([n,p],i)=>`<button data-cpreset="${i}" title="${n}"><span style="background:${p.bg};color:${p.ink}">Aa<i style="background:${p.accent}"></i></span>${n}</button>`).join('')}</div>
     <button class="pill" data-creset style="width:100%;margin-top:12px">Reset to Midnight</button>`;
 }
-function setCustom(c){ S.custom=c; save(); applyTheme(); syncPut('x-theme',{custom:c}); }
+function setCustom(c){ S.custom=c; save(); applyTheme(); syncPut('x-theme',{custom:c,glass:S.glass||'blue'}); }
 $('#prefs').addEventListener('input',e=>{
   const k=e.target.dataset&&e.target.dataset.ccol; if(!k) return;
   S.custom=Object.assign(custom(),{[k]:e.target.value}); applyTheme();

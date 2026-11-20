@@ -244,7 +244,7 @@ Earlier ideas still open:
 
 ## Themes (Settings → Appearance)
 `THEMES` in src/app.js: auto, autoglass, light, glass, dark, sepia, black. `applyTheme()` sets `data-theme` and the `glass` class on <html>
-(glass = light tokens + `:root.glass` frosted panels on a blue wash, modelled on the Stobite CRM's light look; autoglass drops the
+(glass = light tokens + `:root.glass` frosted panels on a soft tinted wash; `S.glass` picks the tint via `data-glass` (blue, mist, lavender, rose, peach, sand, sage, aqua), modelled on the Stobite CRM's light look; autoglass drops the
 class when the system is dark). Dark uses Discord-like soft colours (#313338 page, #2b2d31 cards, #dbdee1 text, #7983f5 accent).
 Custom theme (`custom`): four colours in `S.custom` (page, text, accent, red letters); `customVars()` in extras.js derives the rest
 and `applyCustom()` sets them inline on <html>. The colours sync as db doc `x-theme`; the chosen theme itself does not.

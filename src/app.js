@@ -542,8 +542,12 @@ function headHTML(style,b,c,v){
 }
 // Settings: a short main page in three sections, with Font and Chapter heading as their own pages.
 let PREFPAGE='main';
-const GLASS_SW='radial-gradient(80% 90% at 90% 0%,#b9cff4,transparent 70%),linear-gradient(160deg,#f7f9fc,#e6edf7)';
-const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft blue wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea'],['custom','Custom','Your own colours','','']];
+const GLASS_TINTS=[['blue','Soft blue','#d3dcea','#4a6fb5'],['mist','Mist','#dcdee3','#56657d'],['lavender','Lavender','#e0d9ef','#7059b8'],['rose','Rose','#f1dde2','#b0506c'],
+  ['peach','Peach','#f3e1d3','#b0673f'],['sand','Sand','#e9e3d6','#8a6a3c'],['sage','Sage','#d8e5da','#3f8259'],['aqua','Aqua','#d3e8e8','#2f8586']];
+const glassTint=()=>GLASS_TINTS.find(t=>t[0]===S.glass)||GLASS_TINTS[0];
+const glassSW=t=>`radial-gradient(80% 90% at 90% 0%,${t[2]},transparent 70%),linear-gradient(160deg,#f8f9fa,color-mix(in srgb,${t[2]} 45%,#f8f9fa))`;
+const GLASS_SW='';
+const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft colour wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea'],['custom','Custom','Your own colours','','']];
 const CHEV_R='<svg class="chv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 2.5 3.5 3.5-3.5 3.5"/></svg>';
 function renderPrefs(){
   const el=$('#prefs');
@@ -558,7 +562,7 @@ function renderPrefs(){
     return;
   }
   if(PREFPAGE==='theme'){
-    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>(k==='custom'&&([bg,ink]=[custom().bg,custom().ink]),`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`)).join('')}</div>`+customEditorHTML();
+    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>(k==='custom'&&([bg,ink]=[custom().bg,custom().ink]),k.endsWith('glass')&&(bg=glassSW(glassTint())),`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`)).join('')}</div>`+(S.theme.endsWith('glass')?`<div class="sg">Glass colour</div><div class="gtints">${GLASS_TINTS.map(t=>`<button data-gtint="${t[0]}" class="${glassTint()[0]===t[0]?'on':''}"><span style="background:${glassSW(t)}"><i style="background:${t[3]}"></i></span>${t[1]}</button>`).join('')}</div>`:'')+customEditorHTML();
     return;
   }
   if(PREFPAGE==='heading'){
@@ -594,6 +598,7 @@ $('#prefs').onclick=async e=>{
   const keep=()=>{ const fl=$('#flist'), fs=fl?fl.scrollTop:0, top=$('#prefs').scrollTop; renderPrefs(); if($('#flist')) $('#flist').scrollTop=fs; $('#prefs').scrollTop=top; };
   if(b.dataset.page){ PREFPAGE=b.dataset.page; renderPrefs(); $('#prefs').scrollTop=0; return; }
   if(b.dataset.theme){ S.theme=b.dataset.theme; }
+  if(b.dataset.gtint){ S.glass=b.dataset.gtint; save(); applyTheme(); syncPut('x-theme',{custom:custom(),glass:S.glass}); keep(); return; }
   if(b.dataset.cpreset){ setCustom({...CPRESETS[+b.dataset.cpreset][1]}); keep(); return; }
   if('creset' in b.dataset){ setCustom({...CUSTOM_DEF}); keep(); return; }
   if(b.dataset.layout){ const fv=oneMode()?ONE:firstVisibleVerse(); S.layout=b.dataset.layout; if(S.layout==='one'){ ONE=fv||1; ONEKEY=S.b+'.'+S.c; } save(); if(!searchMode) draw(S.layout==='one'?ONE:(fv>1?fv:0)); }
@@ -703,6 +708,7 @@ function applyTheme(){
   const th=S.theme, root=document.documentElement;
   if(th==='auto'||th==='autoglass') root.removeAttribute('data-theme'); else root.setAttribute('data-theme',th==='glass'?'light':th);
   applyCustom(th==='custom');
+  if(S.glass&&S.glass!=='blue') root.setAttribute('data-glass',S.glass); else root.removeAttribute('data-glass');
   root.classList.toggle('glass',th==='glass'||(th==='autoglass'&&!matchMedia('(prefers-color-scheme:dark)').matches));
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applyTheme());

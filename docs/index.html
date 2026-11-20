@@ -255,17 +255,26 @@ body.shuf-open{overflow:hidden}
   --hy:rgba(255,214,10,.22); --hg:rgba(48,209,88,.2); --hb:rgba(10,132,255,.24); --hp:rgba(255,55,95,.22); --hv:rgba(191,90,242,.24); --shbg:#000000; color-scheme:dark}
 /* Glass (Settings → Appearance): soft blue wash behind frosted white panels, like the Stobite CRM's light look */
 :root.glass{
-  --bg:#f1f4f8; --side:rgba(255,255,255,.62); --bar:rgba(255,255,255,.58); --ink:#1b2431; --muted:#687384; --faint:#a3acb9;
-  --line:rgba(30,50,80,.08); --hover:rgba(30,50,80,.05); --sel:rgba(58,114,216,.12); --accent:#2f62c9; --red:#b3261e; --sn:#8592a3;
-  --mark:rgba(255,204,0,.32); --flash:rgba(58,114,216,.1); --card:rgba(255,255,255,.74); --segon:#ffffff;
-  --shadow:0 1px 2px rgba(30,50,80,.05),0 20px 48px -18px rgba(30,50,80,.32),inset 0 0 0 1px rgba(255,255,255,.85);
-  --hy:rgba(255,204,0,.3);--hg:rgba(52,199,89,.2);--hb:rgba(58,114,216,.18);--hp:rgba(255,55,95,.15);--hv:rgba(175,82,222,.16);
-  --shbg:#eef3fa; color-scheme:light}
-:root.glass body{background:radial-gradient(1100px 620px at 92% -8%,rgba(185,207,244,.6),transparent 70%),radial-gradient(900px 520px at -5% 8%,rgba(185,207,244,.34),transparent 70%),linear-gradient(180deg,#f2f6fb,#f1f4f8 55%);background-attachment:fixed}
+  --gt:#d3dcea; --accent:#4a6fb5;
+  --bg:color-mix(in srgb,var(--gt) 10%,#f7f8fa); --side:rgba(255,255,255,.62); --bar:rgba(255,255,255,.6); --ink:#1f2530; --muted:#6b7380; --faint:#a7adb7;
+  --line:rgba(40,50,70,.08); --hover:rgba(40,50,70,.05); --sel:color-mix(in srgb,var(--accent) 12%,transparent); --red:#b3261e; --sn:#8a909b;
+  --mark:rgba(255,204,0,.32); --flash:color-mix(in srgb,var(--accent) 10%,transparent); --card:rgba(255,255,255,.76); --segon:#ffffff;
+  --shadow:0 1px 2px rgba(40,50,70,.05),0 20px 48px -18px rgba(40,50,70,.26),inset 0 0 0 1px rgba(255,255,255,.85);
+  --hy:rgba(255,204,0,.3);--hg:rgba(52,199,89,.2);--hb:color-mix(in srgb,var(--accent) 18%,transparent);--hp:rgba(255,55,95,.15);--hv:rgba(175,82,222,.16);
+  --shbg:color-mix(in srgb,var(--gt) 18%,#f7f8fa); color-scheme:light}
+/* glass colours (Settings → Appearance → Glass colour): a soft tint for the wash and a matching accent */
+:root.glass[data-glass="mist"]{--gt:#dcdee3;--accent:#56657d}
+:root.glass[data-glass="lavender"]{--gt:#e0d9ef;--accent:#7059b8}
+:root.glass[data-glass="rose"]{--gt:#f1dde2;--accent:#b0506c}
+:root.glass[data-glass="peach"]{--gt:#f3e1d3;--accent:#b0673f}
+:root.glass[data-glass="sand"]{--gt:#e9e3d6;--accent:#8a6a3c}
+:root.glass[data-glass="sage"]{--gt:#d8e5da;--accent:#3f8259}
+:root.glass[data-glass="aqua"]{--gt:#d3e8e8;--accent:#2f8586}
+:root.glass body{background:radial-gradient(1100px 620px at 92% -8%,color-mix(in srgb,var(--gt) 70%,transparent),transparent 70%),radial-gradient(900px 520px at -5% 8%,color-mix(in srgb,var(--gt) 40%,transparent),transparent 70%),linear-gradient(180deg,color-mix(in srgb,var(--gt) 18%,#f8f9fa),var(--bg) 55%);background-attachment:fixed}
 :root.glass :is(.bar,.sheet,#menup,#verp,#navp,#planp,#syncp,#pop,#panel,#cont,#toast,#memo .mcard){-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%)}
 :root.glass .bar{border-bottom-color:rgba(255,255,255,.7);box-shadow:0 1px 0 rgba(30,50,80,.05)}
 :root.glass #panel{background:rgba(255,255,255,.66)}
-:root.glass #scrim{background:rgba(30,50,80,.12)}
+:root.glass #scrim{background:rgba(40,50,70,.12)}
 :root.glass #prefs .sbox,:root.glass #prefs .themes button{box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 1px 2px rgba(30,50,80,.04)}
 #prefs .cpick{display:inline-flex;align-items:center;gap:10px}
 #prefs .cpick code{font:12px ui-monospace,Menlo,monospace;color:var(--muted)}
@@ -278,6 +287,11 @@ body.shuf-open{overflow:hidden}
 #upd{position:fixed;z-index:72;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:var(--card);box-shadow:var(--shadow);border-radius:980px;padding:6px 6px 6px 16px;font:13.5px -apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap;animation:up .2s ease-out}
 #upd [data-reload]{border:0;background:var(--accent);color:#fff;border-radius:980px;padding:6px 14px;font-weight:600}
 #upd [data-x]{border:0;background:none;color:var(--muted);padding:6px 8px}
+#prefs .gtints{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#prefs .gtints button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);padding:0}
+#prefs .gtints span{width:100%;height:36px;border-radius:10px;border:.5px solid rgba(128,128,128,.3);position:relative;overflow:hidden}
+#prefs .gtints span i{position:absolute;left:0;right:0;bottom:0;height:4px}
+#prefs .gtints button.on span{box-shadow:0 0 0 2px var(--accent)} #prefs .gtints button.on{color:var(--ink)}
 #prefs .themes{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
 #prefs .themes button{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;border:.5px solid var(--line);background:var(--card);border-radius:12px;padding:8px 10px}
 #prefs .themes button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
@@ -1457,8 +1471,12 @@ function headHTML(style,b,c,v){
 }
 // Settings: a short main page in three sections, with Font and Chapter heading as their own pages.
 let PREFPAGE='main';
-const GLASS_SW='radial-gradient(80% 90% at 90% 0%,#b9cff4,transparent 70%),linear-gradient(160deg,#f7f9fc,#e6edf7)';
-const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft blue wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea'],['custom','Custom','Your own colours','','']];
+const GLASS_TINTS=[['blue','Soft blue','#d3dcea','#4a6fb5'],['mist','Mist','#dcdee3','#56657d'],['lavender','Lavender','#e0d9ef','#7059b8'],['rose','Rose','#f1dde2','#b0506c'],
+  ['peach','Peach','#f3e1d3','#b0673f'],['sand','Sand','#e9e3d6','#8a6a3c'],['sage','Sage','#d8e5da','#3f8259'],['aqua','Aqua','#d3e8e8','#2f8586']];
+const glassTint=()=>GLASS_TINTS.find(t=>t[0]===S.glass)||GLASS_TINTS[0];
+const glassSW=t=>`radial-gradient(80% 90% at 90% 0%,${t[2]},transparent 70%),linear-gradient(160deg,#f8f9fa,color-mix(in srgb,${t[2]} 45%,#f8f9fa))`;
+const GLASS_SW='';
+const THEMES=[['auto','Automatic','Light by day, dark at night','#ffffff','#1d1d1f'],['autoglass','Automatic glass','Glass by day, dark at night',GLASS_SW,'#1b2431'],['light','Light','White paper','#ffffff','#1d1d1f'],['glass','Glass','Frosted panels on a soft colour wash',GLASS_SW,'#1b2431'],['dark','Dark','Soft charcoal, Discord colours','#313338','#dbdee1'],['sepia','Sepia','Warm paper, easy on the eyes','#f4ecd8','#3b3024'],['black','Black','True black, for reading at night','#000000','#e8e8ea'],['custom','Custom','Your own colours','','']];
 const CHEV_R='<svg class="chv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 2.5 3.5 3.5-3.5 3.5"/></svg>';
 function renderPrefs(){
   const el=$('#prefs');
@@ -1473,7 +1491,7 @@ function renderPrefs(){
     return;
   }
   if(PREFPAGE==='theme'){
-    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>(k==='custom'&&([bg,ink]=[custom().bg,custom().ink]),`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`)).join('')}</div>`+customEditorHTML();
+    el.innerHTML=back('Appearance')+`<div class="themes">${THEMES.map(([k,n,sub,bg,ink])=>(k==='custom'&&([bg,ink]=[custom().bg,custom().ink]),k.endsWith('glass')&&(bg=glassSW(glassTint())),`<button data-theme="${k}" class="${S.theme===k?'on':''}"><span class="sw" style="background:${bg};color:${ink}">${k.startsWith('auto')?'<i style="background:#313338"></i>':''}Aa</span><b>${n}</b><small>${sub}</small></button>`)).join('')}</div>`+(S.theme.endsWith('glass')?`<div class="sg">Glass colour</div><div class="gtints">${GLASS_TINTS.map(t=>`<button data-gtint="${t[0]}" class="${glassTint()[0]===t[0]?'on':''}"><span style="background:${glassSW(t)}"><i style="background:${t[3]}"></i></span>${t[1]}</button>`).join('')}</div>`:'')+customEditorHTML();
     return;
   }
   if(PREFPAGE==='heading'){
@@ -1509,6 +1527,7 @@ $('#prefs').onclick=async e=>{
   const keep=()=>{ const fl=$('#flist'), fs=fl?fl.scrollTop:0, top=$('#prefs').scrollTop; renderPrefs(); if($('#flist')) $('#flist').scrollTop=fs; $('#prefs').scrollTop=top; };
   if(b.dataset.page){ PREFPAGE=b.dataset.page; renderPrefs(); $('#prefs').scrollTop=0; return; }
   if(b.dataset.theme){ S.theme=b.dataset.theme; }
+  if(b.dataset.gtint){ S.glass=b.dataset.gtint; save(); applyTheme(); syncPut('x-theme',{custom:custom(),glass:S.glass}); keep(); return; }
   if(b.dataset.cpreset){ setCustom({...CPRESETS[+b.dataset.cpreset][1]}); keep(); return; }
   if('creset' in b.dataset){ setCustom({...CUSTOM_DEF}); keep(); return; }
   if(b.dataset.layout){ const fv=oneMode()?ONE:firstVisibleVerse(); S.layout=b.dataset.layout; if(S.layout==='one'){ ONE=fv||1; ONEKEY=S.b+'.'+S.c; } save(); if(!searchMode) draw(S.layout==='one'?ONE:(fv>1?fv:0)); }
@@ -1618,6 +1637,7 @@ function applyTheme(){
   const th=S.theme, root=document.documentElement;
   if(th==='auto'||th==='autoglass') root.removeAttribute('data-theme'); else root.setAttribute('data-theme',th==='glass'?'light':th);
   applyCustom(th==='custom');
+  if(S.glass&&S.glass!=='blue') root.setAttribute('data-glass',S.glass); else root.removeAttribute('data-glass');
   root.classList.toggle('glass',th==='glass'||(th==='autoglass'&&!matchMedia('(prefers-color-scheme:dark)').matches));
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applyTheme());
@@ -2322,7 +2342,7 @@ function applyRemote(rows,first){
     else if(r.id==='x-history'){ HIST=mergeHist(HIST,d&&d.list||[]); store.set('history',HIST); other=true; }
     else if(r.id==='x-mem'){ MEM=first?[...(d&&d.list||[]),...MEM.filter(x=>!(d&&d.list||[]).some(y=>y.b===x.b&&y.c===x.c&&y.v===x.v))]:(d&&d.list||[]); store.set('mem',MEM); other=true; }
     else if(r.id==='x-pos'&&d) remotePos(d);
-    else if(r.id==='x-theme'&&d&&d.custom){ S.custom=d.custom; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
+    else if(r.id==='x-theme'&&d&&(d.custom||d.glass)){ if(d.custom) S.custom=d.custom; if(d.glass) S.glass=d.glass; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
   }
   store.set('outbox',OUTBOX);
   if(marks){ store.set('marks',MARKS); applyMarks(); }
@@ -2501,7 +2521,7 @@ function customEditorHTML(){
     <div class="sg">Start from</div><div class="cpre">${CPRESETS.map(([n,p],i)=>`<button data-cpreset="${i}" title="${n}"><span style="background:${p.bg};color:${p.ink}">Aa<i style="background:${p.accent}"></i></span>${n}</button>`).join('')}</div>
     <button class="pill" data-creset style="width:100%;margin-top:12px">Reset to Midnight</button>`;
 }
-function setCustom(c){ S.custom=c; save(); applyTheme(); syncPut('x-theme',{custom:c}); }
+function setCustom(c){ S.custom=c; save(); applyTheme(); syncPut('x-theme',{custom:c,glass:S.glass||'blue'}); }
 $('#prefs').addEventListener('input',e=>{
   const k=e.target.dataset&&e.target.dataset.ccol; if(!k) return;
   S.custom=Object.assign(custom(),{[k]:e.target.value}); applyTheme();

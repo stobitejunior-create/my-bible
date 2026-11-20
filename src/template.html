@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Bible</title>
 <style>
 :root{
@@ -10,7 +10,7 @@
   --line:rgba(0,0,0,.09); --hover:rgba(0,0,0,.05); --sel:#e8e8ed; --accent:#0071e3; --red:#b3141c; --sn:#8a8a8f;
   --mark:rgba(255,204,0,.35); --flash:rgba(0,113,227,.10); --card:#ffffff; --segon:#ffffff; --shadow:0 12px 40px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.08);
   --fs:20px;
-  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  box-sizing:border-box; padding-bottom:env(safe-area-inset-bottom,0px);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
@@ -43,7 +43,7 @@ main{display:flex;flex-direction:column;min-width:0;min-height:0}
 .ch.on{background:var(--accent);color:#fff}
 .ch.dim{opacity:.35}
 
-.bar{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;row-gap:6px;align-items:center;gap:10px;padding:10px 16px;background:var(--bar);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--line)}
+.bar{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;row-gap:6px;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:var(--bar);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--line)}
 .ib{border:0;background:none;width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--muted)}
 .ib:hover{background:var(--hover);color:var(--ink)}
 .ib svg{width:17px;height:17px}
@@ -313,6 +313,19 @@ body.shuf-open{overflow:hidden}
 @keyframes tp-book{0%,20%{transform:none}70%,100%{transform:rotateY(150deg)}}
 @keyframes tp-fade{0%,20%{opacity:0}60%,100%{opacity:1}}
 #prefs .snote{font-size:12px;color:var(--muted);margin:10px 4px 0;line-height:1.45}
+/* no zooming on phones: no double-tap zoom, and text boxes at 16px so iPhone doesn't zoom in when one is tapped */
+html{touch-action:manipulation}
+@media (max-width:700px){ input:not([type=range]):not([type=color]):not([type=checkbox]),select,textarea{font-size:16px!important} }
+/* book actions (rename, remove) */
+#bkact{position:fixed;inset:0;z-index:96;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;padding:20px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#bkact.open{display:flex}
+#bkact .bkc{background:var(--card);border-radius:16px;box-shadow:var(--shadow);width:min(380px,100%);padding:18px}
+:root.glass #bkact .bkc{-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%)}
+#bkact h3{font-size:16px;margin:0 0 4px} #bkact .orig{font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.4}
+#bkact input{width:100%;border:.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:16px;outline:none}
+#bkact .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap} #bkact .acts .pill{flex:1}
+#bkact .rm{display:block;width:100%;margin-top:10px;border:0;background:none;color:var(--red);font-size:14px;padding:8px}
+.cvsync{font-size:12px;color:var(--muted);padding:0 18px 4px}
 /* ===== Library ===== */
 #lib{position:fixed;inset:0;z-index:90;background:var(--bg);display:none;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding-top:env(safe-area-inset-top,0px)}
 :root.glass #lib,:root.glass #rdr{background:color-mix(in srgb,var(--gt) 12%,#f8f9fa)}
@@ -367,7 +380,7 @@ body.shuf-open{overflow:hidden}
 #rstage{position:absolute;inset:0;padding-top:calc(env(safe-area-inset-top,0px) + 46px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}
 #rfr{width:100%;height:100%;border:0;display:block;background:transparent}
 .rtop{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;align-items:center;gap:4px;padding:calc(env(safe-area-inset-top,0px) + 6px) 10px 6px;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--line);transition:transform .25s,opacity .25s}
-.rtt{flex:1;min-width:0;text-align:center;line-height:1.15}
+.rtt{flex:1;min-width:0;text-align:center;line-height:1.15;border:0;background:none;color:var(--ink);padding:2px 4px}
 .rtt b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .rtt small{font-size:11.5px;color:var(--muted)}
 #rdr .ib{width:38px;height:38px;border:0;background:none;color:var(--ink);border-radius:10px;display:grid;place-items:center;flex:none}
 #rdr .ib svg{width:20px;height:20px} #rdr .ib:hover{background:var(--hover)} #rdr .rbig{font:600 16px ui-serif,Georgia,serif}
@@ -709,7 +722,7 @@ main{display:grid;grid-template-rows:auto 1fr}
 @media (max-width:1100px){.body.withpanel{grid-template-columns:1fr 300px}}
 @media (max-width:860px){.body.withpanel{grid-template-columns:1fr} #panel{position:fixed;right:0;top:0;bottom:0;width:320px;z-index:45;box-shadow:var(--shadow)} .v.par,.phd{grid-template-columns:2em 1fr;} .v.par .t2{grid-column:2}}
 @media (max-width:700px){
-  .bar{gap:4px;padding:8px 10px}
+  .bar{gap:4px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px}
   .edge{display:none}
   .kbd{display:none}
   #navp.open{margin:0;max-height:92vh}
@@ -792,9 +805,10 @@ main{display:grid;grid-template-rows:auto 1fr}
 <div id="syncp" class="sheet" role="dialog" aria-label="Sync"></div>
 <div id="memo" role="dialog" aria-label="Memorise"></div>
 <div id="lib" role="dialog" aria-label="Library"></div>
+<div id="bkact" role="dialog" aria-label="Book"></div>
 <div id="rdr" role="dialog" aria-label="Book">
   <div class="rtop"><button class="ib" data-rclose aria-label="Back to Library"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4.5-5.5 5.5 5.5 5.5"/></svg></button>
-    <div class="rtt"><b id="rtitle"></b><small id="rsub"></small></div>
+    <button class="rtt" data-rren title="Rename this book"><b id="rtitle"></b><small id="rsub"></small></button>
     <button class="ib" data-rsheet="find" aria-label="Search this book"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg></button>
     <button class="ib" data-rsheet="toc" aria-label="Contents and bookmarks"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg></button>
     <button class="ib rbig" data-rsheet="look" aria-label="Appearance">Aa</button>

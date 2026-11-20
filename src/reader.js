@@ -11,7 +11,7 @@ const rq=(s,el=document)=>el.querySelector(s);
 const hash=s=>{ let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193); } return (h>>>0).toString(36); };
 const normT=s=>String(s||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'');
 const bookKey=b=>hash(normT(b.f||b.t)+'|'+(b.k==='pdf'?'pdf':'book'));
-const coverHue=b=>parseInt(hash(b.t+b.a).slice(-4),36)%360;
+const coverHue=b=>parseInt(hash(b.t+b.a).slice(-4),36)%360;   // from the original title, so a rename keeps the colour
 const fileTitle=(name,author)=>{ let t=name.replace(/\.[^.]+$/,''); if(author&&t.toLowerCase().endsWith(' - '+author.toLowerCase())) t=t.slice(0,-(author.length+3)); else { const m=t.match(/^(.*) - ([^-]{3,40})$/); if(m&&!author){ t=m[1]; } } t=t.replace(/_ /g,': ').replace(/_/g,' '); if(/, The$/.test(t)) t='The '+t.slice(0,-5); return t.trim(); };
 const fileAuthor=name=>{ const m=name.replace(/\.[^.]+$/,'').match(/ - ([^-]{3,40})$/); return m?m[1].trim():''; };
 const MIME={xhtml:'application/xhtml+xml',html:'text/html',htm:'text/html',css:'text/css',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',svg:'image/svg+xml',webp:'image/webp',ttf:'font/ttf',otf:'font/otf',woff:'font/woff',woff2:'font/woff2'};
@@ -103,6 +103,10 @@ const LIBDB={ open(){ return this.p||(this.p=new Promise((res,rej)=>{ const r=in
   put(s,v,k){ return this.op(s,'readwrite',st=>k===undefined?st.put(v):st.put(v,k)); }, del(s,k){ return this.op(s,'readwrite',st=>st.delete(k)); } };
 const LIB={books:[],loaded:false,mac:!!window.MAC_APP,folder:'',cat:[],q:'',view:store.get('libview','all'),sort:store.get('libsort','author'),author:null};
 let RPOS=store.get('rpos',{});      // key → {i,f,pct,t,title,author,bm:[]}
+// your own names for books (the original title is kept and still searchable); synced as db doc "x-alias"
+let BALIAS=store.get('balias',{});
+const dispT=b=>BALIAS[bookKey(b)]||b.t;
+function setAlias(b,name){ const k=bookKey(b); name=(name||'').trim(); if(!name||name===b.t) delete BALIAS[k]; else BALIAS[k]=name; BALIAS._t=Date.now(); store.set('balias',BALIAS); syncPut('x-alias',BALIAS); }
 async function libLoad(force){
   if(LIB.loaded&&!force) return;
   if(LIB.mac){ try{ const j=await (await fetch(force?'lib/index-fresh.json':'lib/index.json')).json(); LIB.books=(j.books||[]).map(b=>({...b,f:b.f||b.t})); LIB.folder=j.folder||''; LIB.missing=!!j.missing; }catch(e){ LIB.books=[]; } }
@@ -161,6 +165,7 @@ async function libShareCatalog(){
 }
 function libApplyRemote(id,d){
   if(id.startsWith('r-')){ const k=id.slice(2); if(d&&(!RPOS[k]||(d.t||0)>(RPOS[k].t||0))){ RPOS[k]=d; store.set('rpos',RPOS); if($('#lib').classList.contains('open')) libRender(); } return true; }
+  if(id==='x-alias'){ if(d&&(d._t||0)>(BALIAS._t||0)){ BALIAS=d; store.set('balias',BALIAS); if($('#lib').classList.contains('open')){ LIB.keepScroll=true; libRender(); } } return true; }
   if(id.startsWith('lc-')){ if(LIB.mac) return true; const cat=store.get('libcatparts',{}); if(d) cat[d.i]=d; else delete cat[id.slice(3)]; store.set('libcatparts',cat);
     const n=d?d.n:0, ps=Object.values(cat); if(ps.length&&ps.every(p=>p.n===ps[0].n)&&ps.length>=ps[0].n){ LIB.cat=ps.sort((a,b)=>a.i-b.i).flatMap(p=>p.rows); store.set('libcat',LIB.cat); if($('#lib').classList.contains('open')) libRender(); } return true; }
   return false;
@@ -170,21 +175,21 @@ function libApplyRemote(id,d){
 function libOpen(){
   closeSheets(); $('#lib').classList.add('open'); document.body.classList.add('lib-open');
   libRender(); libLoad().then(()=>{ libRender(); libShareCatalog();
-    if(LIB.mac&&!LIB.fresh){ LIB.fresh=true; setTimeout(()=>libLoad(true).then(()=>{ LIB.keepScroll=true; libRender(); libShareCatalog(); }),400); } });
+    if(LIB.mac&&!LIB.fresh){ LIB.fresh=true; setTimeout(()=>libLoad(true).then(()=>{ LIB.keepScroll=true; libRender(); libShareCatalog(); setTimeout(libShareCovers,3000); }),400); } });
 }
 function libClose(){ $('#lib').classList.remove('open'); document.body.classList.remove('lib-open'); }
 function libReload(){ LIB.loaded=false; libLoad(true).then(()=>{ libRender(); libShareCatalog(); }); }
-function coverHTML(b,big){
+function coverHTML(b,big,far){
   const pct=(posGet(b)||{}).pct;
-  return `<div class="cv${big?' big':''}" style="--h:${coverHue(b)}"><span class="cvt">${esc(b.t)}</span><span class="cva">${esc(b.a||'')}</span>${b.k==='pdf'?'<span class="cvk">PDF</span>':''}<img alt="" data-cover="${b.id}" hidden>${pct!=null?`<i class="cvp"><b style="width:${Math.max(2,Math.round(pct*100))}%"></b></i>`:''}</div>`;
+  return `<div class="cv${big?' big':''}" style="--h:${coverHue(b)}"><span class="cvt">${esc(dispT(b))}</span><span class="cva">${esc(b.a||'')}</span>${b.k==='pdf'?'<span class="cvk">PDF</span>':''}<img alt="" data-cover="${far?'':b.id}" data-key="${bookKey(b)}" hidden>${pct!=null?`<i class="cvp"><b style="width:${Math.max(2,Math.round(pct*100))}%"></b></i>`:''}</div>`;
 }
 function bookTile(b){ const p=posGet(b), sub=[b.a,p&&p.pct!=null?(p.pct>.995?'Finished':Math.round(p.pct*100)+'%'):''].filter(Boolean).join(' · ');
-  return `<button class="bk" data-book="${b.id}">${coverHTML(b)}<span class="bt">${esc(b.t)}</span><span class="ba">${esc(sub)||'&nbsp;'}</span></button>`; }
+  return `<button class="bk" data-book="${b.id}">${coverHTML(b)}<span class="bt">${esc(dispT(b))}</span><span class="ba">${esc(sub)||'&nbsp;'}</span></button>`; }
 function libFiltered(){
   const q=LIB.q.trim().toLowerCase(); let L=LIB.books;
-  if(q) L=L.filter(b=>(b.t+' '+b.a).toLowerCase().includes(q));
+  if(q) L=L.filter(b=>(b.t+' '+dispT(b)+' '+b.a).toLowerCase().includes(q));
   if(LIB.author!=null) L=L.filter(b=>b.a===LIB.author);
-  const by={author:(a,b)=>(a.a||'~').localeCompare(b.a||'~')||a.t.localeCompare(b.t),title:(a,b)=>a.t.localeCompare(b.t),recent:(a,b)=>(b.d||0)-(a.d||0),
+  const by={author:(a,b)=>(a.a||'~').localeCompare(b.a||'~')||dispT(a).localeCompare(dispT(b)),title:(a,b)=>dispT(a).localeCompare(dispT(b)),recent:(a,b)=>(b.d||0)-(a.d||0),
     read:(a,b)=>((posGet(b)||{}).t||0)-((posGet(a)||{}).t||0)||a.t.localeCompare(b.t)};
   return L.slice().sort(by[LIB.sort]||by.author);
 }
@@ -211,7 +216,7 @@ function libRender(){
     body=cont+(L.length?`<div class="lbgrid">${L.map(bookTile).join('')}</div>`:`<div class="lbempty">No books match “${esc(LIB.q)}”.</div>`)+(mac?'':libCatHTML());
   }
   const top=rq('.lbbody',el)?rq('.lbbody',el).scrollTop:0, focus=document.activeElement&&document.activeElement.id==='lbq';
-  el.innerHTML=head+`<div class="lbbody">${body}</div>`;
+  el.innerHTML=head+(LIB.mac&&LIB.cvLeft?`<div class="cvsync">Sharing covers with your phone… ${LIB.cvLeft.toLocaleString()} to go</div>`:'<div class="cvsync"></div>')+`<div class="lbbody">${body}</div>`;
   if(LIB.keepScroll) rq('.lbbody',el).scrollTop=top; LIB.keepScroll=false;
   if(focus){ const i=$('#lbq'); i.focus(); i.setSelectionRange(i.value.length,i.value.length); }
   libCovers();
@@ -221,30 +226,87 @@ function libCatHTML(){
   if(LIB.mac||!LIB.cat.length) return '';
   const have=new Set(LIB.books.map(b=>normT(b.f))), q=LIB.q.trim().toLowerCase();
   let rows=LIB.cat.filter(r=>!have.has(normT(r[3])));
-  if(q) rows=rows.filter(r=>(r[0]+' '+r[1]).toLowerCase().includes(q));
+  if(q) rows=rows.filter(r=>(r[0]+' '+(BALIAS[bookKey({f:r[3],k:r[2]})]||'')+' '+r[1]).toLowerCase().includes(q));
   if(LIB.author!=null) rows=rows.filter(r=>r[1]===LIB.author);
   if(!rows.length) return '';
   const show=rows.slice(0,q||LIB.author!=null?400:60);
-  return `<div class="lbsec">On your Mac <small>${rows.length.toLocaleString()} not on this phone yet</small></div><div class="lbgrid mac">${show.map((r,i)=>{ const b={id:'c'+i,t:r[0],a:r[1],k:r[2]}; return `<button class="bk far" data-lcat="${esc(r[1])}" title="Add from Files">${coverHTML(b)}<span class="bt">${esc(r[0])}</span><span class="ba">${esc(r[1]||'')} · ☁︎</span></button>`; }).join('')}</div>${rows.length>show.length?`<div class="lbempty small">Search to find the other ${(rows.length-show.length).toLocaleString()}.</div>`:''}`;
+  return `<div class="lbsec">On your Mac <small>${rows.length.toLocaleString()} not on this phone yet</small></div><div class="lbgrid mac">${show.map((r,i)=>{ const b={id:'c'+i,t:r[0],a:r[1],k:r[2],f:r[3]}; return `<button class="bk far" data-lcat="${esc(r[1])}" title="Add from Files">${coverHTML(b,false,true)}<span class="bt">${esc(dispT(b))}</span><span class="ba">${esc(r[1]||'')} · ☁︎</span></button>`; }).join('')}</div>${rows.length>show.length?`<div class="lbempty small">Search to find the other ${(rows.length-show.length).toLocaleString()}.</div>`:''}`;
 }
-// covers: Mac asks Quick Look (a few at a time, only for tiles on screen); the phone has them saved
+// covers: the Mac makes them (a few at a time, only for tiles on screen); the phone has its own books' covers saved, and
+// gets covers for the Mac's books (and any it couldn't read) from Sync, where the Mac shares small copies ("cv-<key>")
 let COVQ=[], COVN=0, COVIO=null;
 function libCovers(){
   if(COVIO) COVIO.disconnect();
   COVIO=new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; COVIO.unobserve(e.target); COVQ.push(e.target); covPump(); }),{root:rq('#lib .lbbody'),rootMargin:'400px'});
-  document.querySelectorAll('#lib img[data-cover]').forEach(i=>{ if(!/^c\d/.test(i.dataset.cover)) COVIO.observe(i); });
+  document.querySelectorAll('#lib img[data-key]').forEach(i=>COVIO.observe(i));
 }
 const COVCACHE={};
+async function covLocal(id){
+  if(!id) return null;
+  if(LIB.mac) return await new Promise(r=>{ const im=new Image(); im.onload=()=>r('lib/cover/'+id); im.onerror=()=>r(null); im.src='lib/cover/'+id; });
+  const bl=await LIBDB.get('covers',id).catch(()=>null); return bl?URL.createObjectURL(bl):null;
+}
+async function covShared(key){
+  if(LIB.mac) return null;
+  const bl=await LIBDB.get('covers','k:'+key).catch(()=>null); if(bl) return URL.createObjectURL(bl);
+  if(!syncOn()) return null;
+  const rows=await sbRest('GET',`bible_docs?select=data&deleted=is.false&id=eq.${encodeURIComponent('cv-'+key)}`).catch(()=>null);
+  const d=rows&&rows[0]&&rows[0].data&&rows[0].data.d; if(!d) return null;
+  const blob=await (await fetch(d)).blob(); LIBDB.put('covers',blob,'k:'+key).catch(()=>{}); return URL.createObjectURL(blob);
+}
 function covPump(){
   while(COVN<4&&COVQ.length){
-    const img=COVQ.shift(), id=img.dataset.cover; if(!img.isConnected) continue;
+    const img=COVQ.shift(), id=img.dataset.cover, key=img.dataset.key, ck=id||'k:'+key; if(!img.isConnected) continue;
     const show=u=>{ img.onload=()=>{ img.hidden=false; img.parentNode.classList.add('has'); }; img.src=u; };
-    if(COVCACHE[id]){ if(COVCACHE[id]!=='none') show(COVCACHE[id]); continue; }
+    if(COVCACHE[ck]){ if(COVCACHE[ck]!=='none') show(COVCACHE[ck]); continue; }
     COVN++;
-    const done=u=>{ COVN--; COVCACHE[id]=u||'none'; if(u) show(u); covPump(); };
-    if(LIB.mac){ const im=new Image(); im.onload=()=>done('lib/cover/'+id); im.onerror=()=>done(null); im.src='lib/cover/'+id; }
-    else LIBDB.get('covers',id).then(bl=>done(bl?URL.createObjectURL(bl):null)).catch(()=>done(null));
+    (async()=>{ let u=null; try{ u=await covLocal(id); if(!u) u=await covShared(key); }catch(e){} COVN--; COVCACHE[ck]=u||'none'; if(u) show(u); covPump(); })();
   }
+}
+// Mac: share a small copy of every cover with the phone, one book at a time in the background (each book is downloaded
+// from iCloud just long enough to read its cover). Progress shows under the Library title.
+let CVUP=store.get('cvup',{}), CVRUN=false;
+async function libShareCovers(){
+  if(!LIB.mac||!syncOn()||CVRUN) return; CVRUN=true;
+  try{
+    const todo=LIB.books.filter(b=>!CVUP[bookKey(b)]);
+    let n=0;
+    for(const b of todo){
+      if(!syncOn()) break;
+      const key=bookKey(b);
+      const d=await new Promise(res=>{ const im=new Image(); im.onload=()=>{ const h=200, w=Math.round(im.naturalWidth*h/im.naturalHeight)||133, c=document.createElement('canvas'); c.width=Math.min(w,200); c.height=h; c.getContext('2d').drawImage(im,0,0,c.width,h); res(c.toDataURL('image/jpeg',.72)); }; im.onerror=()=>res(null); im.src='lib/cover/'+b.id; });
+      if(d) await sbRest('POST','bible_docs?on_conflict=user_id,id',[{id:'cv-'+key,data:{d},deleted:false}],{Prefer:'resolution=merge-duplicates,return=minimal'}).catch(()=>{});
+      CVUP[key]=d?1:2; if(++n%10===0) store.set('cvup',CVUP);
+      LIB.cvLeft=todo.length-n; const el=rq('#lib .cvsync'); if(el) el.textContent=LIB.cvLeft?`Sharing covers with your phone… ${LIB.cvLeft.toLocaleString()} to go`:'';
+      await new Promise(r=>setTimeout(r,150));
+    }
+  }finally{ store.set('cvup',CVUP); CVRUN=false; LIB.cvLeft=0; const el=rq('#lib .cvsync'); if(el) el.textContent=''; }
+}
+// long-press (phone) or right-click (Mac) a book: rename it, or remove it from the phone
+function bookActions(b){
+  const el=$('#bkact'), al=BALIAS[bookKey(b)];
+  el.innerHTML=`<div class="bkc"><h3>Rename book</h3><div class="orig">Original title: ${esc(b.t)}${b.a?`<br>${esc(b.a)}`:''}</div>
+    <input id="bkname" value="${esc(al||b.t)}" placeholder="${esc(b.t)}" autocomplete="off">
+    <div class="acts">${al?'<button class="pill" data-bkorig>Use original</button>':''}<button class="pill" data-bkx>Cancel</button><button class="pill pri" data-bksave>Save</button></div>
+    ${LIB.mac||b.id.startsWith('c')?'':'<button class="rm" data-bkrm>Remove from this phone</button>'}</div>`;
+  el.classList.add('open'); el._b=b; setTimeout(()=>{ const i=$('#bkname'); i.focus(); i.select(); },60);
+}
+$('#bkact').addEventListener('click',e=>{
+  const el=$('#bkact'), b=el._b, t=e.target.closest('button');
+  if(e.target===el||(t&&'bkx' in t.dataset)){ el.classList.remove('open'); return; }
+  if(!t) return;
+  if('bksave' in t.dataset) setAlias(b,$('#bkname').value);
+  else if('bkorig' in t.dataset) setAlias(b,'');
+  else if('bkrm' in t.dataset){ el.classList.remove('open'); libRemove(b); return; }
+  el.classList.remove('open'); LIB.keepScroll=true; libRender(); if(R.b===b) rq('#rtitle').textContent=dispT(b);
+});
+$('#bkact').addEventListener('keydown',e=>{ if(e.key==='Enter'){ setAlias($('#bkact')._b,$('#bkname').value); $('#bkact').classList.remove('open'); LIB.keepScroll=true; libRender(); } if(e.key==='Escape') $('#bkact').classList.remove('open'); });
+{ let lt=0, lx=0, ly=0, fired=false;
+  $('#lib').addEventListener('touchstart',e=>{ const t=e.target.closest('[data-book]'); fired=false; if(!t) return; lx=e.touches[0].clientX; ly=e.touches[0].clientY;
+    lt=setTimeout(()=>{ fired=true; const b=LIB.books.find(x=>x.id===t.dataset.book); if(b){ navigator.vibrate&&navigator.vibrate(10); bookActions(b); } },520); },{passive:true});
+  $('#lib').addEventListener('touchmove',e=>{ if(Math.hypot(e.touches[0].clientX-lx,e.touches[0].clientY-ly)>8) clearTimeout(lt); },{passive:true});
+  $('#lib').addEventListener('touchend',e=>{ clearTimeout(lt); if(fired){ e.preventDefault(); } },{passive:false});
+  $('#lib').addEventListener('click',e=>{ if(fired){ e.stopImmediatePropagation(); e.preventDefault(); fired=false; } },true);
 }
 $('#lib').addEventListener('click',e=>{
   const t=e.target.closest('button'); if(!t) return;
@@ -255,7 +317,7 @@ $('#lib').addEventListener('click',e=>{
   else if(t.dataset.lcat!==undefined){ alert(`This book is on your Mac.\n\nTo read it here, tap “Add books” and choose it from:\niCloud Drive › Authors › ${t.dataset.lcat}`); $('#libfile').click(); }
   else if(t.dataset.book){ const b=LIB.books.find(x=>x.id===t.dataset.book); if(b) readerOpen(b); }
 });
-$('#lib').addEventListener('contextmenu',e=>{ const t=e.target.closest('[data-book]'); if(!t||LIB.mac) return; e.preventDefault(); const b=LIB.books.find(x=>x.id===t.dataset.book); if(b) libRemove(b); });
+$('#lib').addEventListener('contextmenu',e=>{ const t=e.target.closest('[data-book]'); if(!t) return; e.preventDefault(); const b=LIB.books.find(x=>x.id===t.dataset.book); if(b) bookActions(b); });
 $('#lib').addEventListener('input',e=>{ if(e.target.id==='lbq'){ LIB.q=e.target.value; clearTimeout(libRender.t); libRender.t=setTimeout(libRender,120); } });
 $('#lib').addEventListener('change',e=>{ if(e.target.id==='lbsort'){ LIB.sort=e.target.value; store.set('libsort',LIB.sort); libRender(); } });
 $('#libfile').addEventListener('change',e=>{ const fs=[...e.target.files]; e.target.value=''; if(fs.length) libAddFiles(fs); });
@@ -267,7 +329,7 @@ const RS=()=>({rfont:S.font||'newyork',rfs:19,rlh:1.6,rmar:2,rjust:true,rmode:'p
 async function readerOpen(b){
   const el=$('#rdr'); el.classList.add('open'); document.body.classList.add('rdr-open');
   R.b=b; R.B=null; R.kind=null; R.chrome=true; readerChrome();
-  rq('#rtitle').textContent=b.t; rq('#rsub').textContent=b.a||'';
+  rq('#rtitle').textContent=dispT(b); rq('#rsub').textContent=b.a||'';
   rq('#rstage').innerHTML=`<div class="rload"><div class="spin"></div><b>Opening ${esc(b.t)}…</b>${LIB.mac&&!b.l?'<small>Downloading from iCloud</small>':''}${b.k==='mobi'?'<small>Converting the Kindle book (first time only)</small>':''}</div>`;
   try{
     const {buf,kind}=await libBytes(b); if(R.b!==b) return;
@@ -307,6 +369,7 @@ async function epubStart(){
     if(RS().rmode!=='scroll'&&x<.28) rPrev(); else if(RS().rmode!=='scroll'&&x>.72) rNext(); else { R.chrome=!R.chrome; readerChrome(); }
   });
   d.addEventListener('keydown',readerKey);
+  ['gesturestart','gesturechange','gestureend'].forEach(t=>d.addEventListener(t,e=>e.preventDefault(),{passive:false}));
   d.addEventListener('scroll',()=>{ if(RS().rmode==='scroll'){ clearTimeout(R.st); R.st=setTimeout(epubSaveScroll,200); } },true);
   const pos=posGet(R.b)||{}; R.bm=pos.bm||[];
   await epubLoad(Math.min(pos.i||0,R.B.spine.length-1),pos.f||0);
@@ -346,7 +409,7 @@ function epubStyle(){
   const f=RFONTS().find(x=>x[0]===o.rfont)||RFONTS()[0], fam=f[0]==='publisher'?'':`font-family:${f[2]}!important;`;
   const v=k=>cs.getPropertyValue(k).trim();
   d.getElementById('rbase').textContent=`
-    html{${scroll?'overflow-y:auto;overflow-x:hidden':'overflow:hidden'};height:100%;-webkit-text-size-adjust:100%;background:transparent;color-scheme:${v('color-scheme')||'light'}}
+    html{${scroll?'overflow-y:auto;overflow-x:hidden':'overflow:hidden'};height:100%;touch-action:${scroll?'pan-y':'none'};-webkit-text-size-adjust:100%;background:transparent;color-scheme:${v('color-scheme')||'light'}}
     body{margin:0!important;box-sizing:border-box;${scroll?`padding:${vp}px ${hp}px 30vh!important;max-width:none`:`height:100vh;padding:${vp}px ${hp}px!important;column-width:${cw}px;column-gap:${G}px;column-fill:auto;width:${R.W}px;will-change:transform`};
       color:${v('--ink')}!important;background:transparent!important;font-size:${o.rfs}px!important;line-height:${o.rlh}!important;${fam}
       text-align:${o.rjust?'justify':'start'};hyphens:${o.rjust?'auto':'manual'};-webkit-hyphens:${o.rjust?'auto':'manual'};overflow-wrap:break-word;widows:2;orphans:2}
@@ -568,6 +631,7 @@ $('#rdr').addEventListener('click',async e=>{
   if('rclose' in t.dataset){ readerClose(); }
   else if(t.dataset.rsheet){ R.sheet===t.dataset.rsheet&&rq('#rdr .rsh.open')?rsheet(null):rsheet(t.dataset.rsheet); }
   else if('rbmk' in t.dataset) readerToggleBm();
+  else if('rren' in t.dataset){ if(R.b) bookActions(R.b); }
   else if(t.dataset.rtab){ R.tab=t.dataset.rtab; rsheetRender(); }
   else if(t.dataset.rtoc){ const x=R.tocList[+t.dataset.rtoc]; rsheet(null); if(R.kind==='pdf'){ if(x.page>=0) pdfJump(x.page,0); } else if(x.href) epubGoHref(x.href); }
   else if(t.dataset.rbm){ const x=R.bmList[+t.dataset.rbm]; rsheet(null); if(R.kind==='pdf') pdfJump(x.i,0); else if(x.i===R.i){ R.p=Math.min(R.pages-1,Math.round(x.f*R.pages)); epubShow(true); epubSave(); } else epubLoad(x.i,x.f,'fade'); }
@@ -592,3 +656,13 @@ function readerRestyle(){
 }
 // keep the reader's page in step with app theme changes (Automatic switching at night)
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{ if(R.b) setTimeout(readerRestyle,50); });
+
+// ---------- no zooming the app (iPhone ignores "no zoom" in the viewport, so stop the gesture) ----------
+// Pinching a PDF zooms its pages instead.
+{ let z0=1;
+  const stop=e=>{ if(R.kind==='pdf'&&$('#rdr').classList.contains('open')&&e.target.closest&&e.target.closest('#rpdf')) return; e.preventDefault(); };
+  document.addEventListener('gesturestart',e=>{ z0=RS().rzoom||1; stop(e); },{passive:false});
+  document.addEventListener('gesturechange',stop,{passive:false});
+  document.addEventListener('gestureend',e=>{ if(R.kind==='pdf'&&$('#rdr').classList.contains('open')&&e.target.closest&&e.target.closest('#rpdf')){ e.preventDefault(); const z=Math.max(.5,Math.min(4,z0*e.scale)); if(Math.abs(z-(RS().rzoom||1))>.02) pdfZoom(z/(RS().rzoom||1)); } else e.preventDefault(); },{passive:false});
+  document.addEventListener('touchmove',e=>{ if(e.touches.length>1&&!(R.kind==='pdf'&&e.target.closest&&e.target.closest('#rpdf'))) e.preventDefault(); },{passive:false});
+}

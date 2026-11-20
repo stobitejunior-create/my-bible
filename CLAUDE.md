@@ -288,3 +288,12 @@ The swipe handler moves #scroll with the finger (resists when there's no chapter
 - Books are copyrighted: never commit them, never put them in docs/.
 - Test hooks: MYBIBLE_EVAL with `window.webkit.messageHandlers.native.postMessage('…')` prints "page: …" to stdout.
   A hidden browser pane doesn't run animation frames, so pdf.js drawing and Web Animations stall there (not on devices).
+- Renames: `BALIAS` (key → your name; `_t` = last change) in localStorage `balias`, synced as db doc `x-alias`; `dispT(b)` everywhere a
+  title is shown; search matches both. Long-press (phone) / right-click (Mac) a book, or tap the reader's title.
+- Covers: Mac reads the EPUB's own cover from its package file first (then Quick Look), calibre for Kindle, and evicts the book
+  back to iCloud-only afterwards if it wasn't downloaded. When Sync is on the Mac shares 200px copies as `cv-<key>` (one book at a
+  time in the background; `cvup` remembers which); the phone fetches them per tile and caches in IndexedDB `covers` as `k:<key>`.
+  The main sync pull skips `bx-*` and `cv-*`.
+- Phone chrome: no root safe-area padding; the top bar pads itself and `statusColor()` sets theme-color to the page colour.
+  No zoom: maximum-scale=1, touch-action:manipulation, 16px inputs on phones, gesture events cancelled (pinch zooms PDFs).
+- Name clash lesson: app.js already has `ALIAS` (book abbreviations) — check names before adding top-level consts.

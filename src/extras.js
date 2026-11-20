@@ -229,7 +229,7 @@ function applyRemote(rows,first){
     else if(r.id==='x-history'){ HIST=mergeHist(HIST,d&&d.list||[]); store.set('history',HIST); other=true; }
     else if(r.id==='x-mem'){ MEM=first?[...(d&&d.list||[]),...MEM.filter(x=>!(d&&d.list||[]).some(y=>y.b===x.b&&y.c===x.c&&y.v===x.v))]:(d&&d.list||[]); store.set('mem',MEM); other=true; }
     else if(r.id==='x-pos'&&d) remotePos(d);
-    else if((r.id.startsWith('r-')||r.id.startsWith('lc-'))&&libApplyRemote(r.id,d)){}
+    else if((r.id.startsWith('r-')||r.id.startsWith('lc-')||r.id==='x-alias')&&libApplyRemote(r.id,d)){}
     else if(r.id.startsWith('bm-')&&d){ BIBIN.push({id:r.id.slice(3),meta:d}); store.set('bibin',BIBIN); }
     else if(r.id==='x-theme'&&d&&(d.custom||d.glass)){ if(d.custom) S.custom=d.custom; if(d.glass) S.glass=d.glass; save(); applyTheme(); if(PREFPAGE==='theme'&&$('#prefs').classList.contains('open')) renderPrefs(); }
   }
@@ -242,7 +242,7 @@ async function syncNow(first){
   if(!syncOn()||SYNC.busy) return; SYNC.busy=true; SYNC.err=''; if($('#syncp').classList.contains('open')) renderSync();
   try{
     let rows=[], off=0; const since=first?'1970-01-01T00:00:00Z':SYNC.last;
-    for(;;){ const page=await sbRest('GET',`bible_docs?select=id,data,deleted,updated_at&updated_at=gt.${encodeURIComponent(since)}&id=not.like.${encodeURIComponent('bx-*')}&order=updated_at.asc&limit=1000&offset=${off}`)||[]; rows=rows.concat(page); if(page.length<1000) break; off+=1000; }
+    for(;;){ const page=await sbRest('GET',`bible_docs?select=id,data,deleted,updated_at&updated_at=gt.${encodeURIComponent(since)}&id=not.like.${encodeURIComponent('bx-*')}&id=not.like.${encodeURIComponent('cv-*')}&order=updated_at.asc&limit=1000&offset=${off}`)||[]; rows=rows.concat(page); if(page.length<1000) break; off+=1000; }
     if(first){ const have=new Set(rows.map(r=>r.id)); for(const [k,v] of Object.entries(localDocs())) if(!have.has(k)&&!OUTBOX[k]) OUTBOX[k]={data:v}; store.set('outbox',OUTBOX); }
     applyRemote(rows,first);
     if(rows.length){ SYNC.last=rows[rows.length-1].updated_at; store.set('synclast',SYNC.last); }
@@ -645,3 +645,15 @@ function turn(dir,fn,fromDx){
   };
   sc.addEventListener('touchend',end,{passive:true}); sc.addEventListener('touchcancel',end,{passive:true});
 }
+
+// ---------- phone status bar ----------
+// The home-screen app's status bar takes the page colour (theme-color), so the top bar runs up to the top of the screen
+// in every theme, and iPhone picks dark or light clock/battery to suit.
+function statusColor(){
+  const cs=getComputedStyle(document.documentElement);
+  let c=cs.getPropertyValue('--bg').trim()||'#ffffff';
+  const probe=document.createElement('i'); probe.style.color=c; document.body.appendChild(probe); const rgb=getComputedStyle(probe).color; probe.remove();
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.remove());
+  const m=document.createElement('meta'); m.name='theme-color'; m.content=rgb; document.head.appendChild(m);
+}
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>setTimeout(statusColor,50));

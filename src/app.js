@@ -738,6 +738,7 @@ function applyTheme(){
   if(th==='auto'||th==='autoglass') root.removeAttribute('data-theme'); else root.setAttribute('data-theme',th==='glass'?'light':th);
   applyCustom(th==='custom');
   if(S.glass&&S.glass!=='blue') root.setAttribute('data-glass',S.glass); else root.removeAttribute('data-glass');
+  setTimeout(statusColor,0);
   root.classList.toggle('glass',th==='glass'||(th==='autoglass'&&!matchMedia('(prefers-color-scheme:dark)').matches));
 }
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applyTheme());

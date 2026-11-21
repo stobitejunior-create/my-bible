@@ -769,6 +769,11 @@ main>.bar.away{transform:translateY(-100%)}
 #wpal .x{background:var(--hover);color:var(--muted);font-size:13px;display:grid;place-items:center}
 #wpal .wl{font-size:11.5px;font-weight:600;color:var(--muted);padding:0 4px 0 6px;white-space:nowrap}
 @media (max-width:700px){#wpal.open{display:grid;grid-template-columns:repeat(6,32px);gap:9px;border-radius:20px;padding:10px 12px} #wpal button{width:32px;height:32px} #wpal .wl{display:none}}
+#wpal .wa{display:flex;gap:6px;flex:none}
+#wpal .wa button{width:auto;height:30px;border-radius:980px;padding:0 12px;background:var(--hover);box-shadow:none;color:var(--ink);font:600 13px -apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap}
+#wpal .wa button:first-child{color:var(--accent)}
+#wpal .wa+.wl{border-left:.5px solid var(--line);padding-left:10px}
+@media (max-width:700px){#wpal .wa{grid-column:1/-1;margin-bottom:3px} #wpal .wa button{flex:1;height:34px}}
 .wch{display:flex;flex-wrap:wrap;gap:6px}
 .wch span{display:inline-flex;align-items:center;gap:4px;border-radius:980px;padding:3px 4px 3px 10px;font:14px ui-serif,Georgia,serif;color:var(--ink)}
 .wch button{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:12px}

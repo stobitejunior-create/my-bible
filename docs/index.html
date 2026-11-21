@@ -769,6 +769,11 @@ main>.bar.away{transform:translateY(-100%)}
 #wpal .x{background:var(--hover);color:var(--muted);font-size:13px;display:grid;place-items:center}
 #wpal .wl{font-size:11.5px;font-weight:600;color:var(--muted);padding:0 4px 0 6px;white-space:nowrap}
 @media (max-width:700px){#wpal.open{display:grid;grid-template-columns:repeat(6,32px);gap:9px;border-radius:20px;padding:10px 12px} #wpal button{width:32px;height:32px} #wpal .wl{display:none}}
+#wpal .wa{display:flex;gap:6px;flex:none}
+#wpal .wa button{width:auto;height:30px;border-radius:980px;padding:0 12px;background:var(--hover);box-shadow:none;color:var(--ink);font:600 13px -apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap}
+#wpal .wa button:first-child{color:var(--accent)}
+#wpal .wa+.wl{border-left:.5px solid var(--line);padding-left:10px}
+@media (max-width:700px){#wpal .wa{grid-column:1/-1;margin-bottom:3px} #wpal .wa button{flex:1;height:34px}}
 .wch{display:flex;flex-wrap:wrap;gap:6px}
 .wch span{display:inline-flex;align-items:center;gap:4px;border-radius:980px;padding:3px 4px 3px 10px;font:14px ui-serif,Georgia,serif;color:var(--ink)}
 .wch button{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:12px}
@@ -1380,7 +1385,9 @@ function go(b,c,v){S.b=b;S.c=c;openBook=b;closePop();SELV=v||0;draw(v); if(v&&$(
 $('#col').addEventListener('click',e=>{
   if(extrasClick(e)) return;
   const p=e.target.closest('[data-go]'); if(p){const [b,c]=p.dataset.go.split(',').map(Number); turn(b>S.b||(b===S.b&&c>S.c)?1:-1,()=>go(b,c)); return;}
-  const w=e.target.closest('.w'); if(w&&!String(getSelection())){e.stopPropagation(); showPop(w.dataset.s.split(' '),w); return;}
+  // A tap on a word no longer jumps to Strong's: it selects the whole verse. Hold on a word (double-click on a Mac)
+  // to select it; the bar that appears has Strong's for that word, the verse, copy, and the highlight colours.
+  const w=e.target.closest('.w'); if(w&&!String(getSelection())&&searchMode&&!e.target.closest('.res')){e.stopPropagation(); showPop(w.dataset.s.split(' '),w); return;}
   const one=e.target.closest('#one');
   if(one&&!searchMode){ if(String(getSelection())) return; if(e.target.closest('[data-opanel]')) return openPanel(ONE); if(e.target.closest('button,a')) return; stepVerse(e.clientX-one.getBoundingClientRect().left<one.offsetWidth/3?-1:1); return; }
   const s2=e.target.closest('[data-v2]'); if(s2){ const v=s2.dataset.v2; load(v).then(()=>{S.v2=v; draw(firstVisibleVerse()||0);}); return; }
@@ -3052,7 +3059,7 @@ function wordChips(mk){
 var WSEL=null;
 {
   const pal=$('#wpal'); let hideT=0, down=false;
-  pal.innerHTML='<span class="wl">Highlight</span>'+COLORS.map(([k,l,col])=>`<button data-wc="${k}" title="${l}" aria-label="${l}" style="background:${col}"></button>`).join('')+'<button class="x" data-wc="" title="Remove highlight" aria-label="Remove highlight">✕</button>';
+  pal.innerHTML='<div class="wa"></div><span class="wl">Highlight</span>'+COLORS.map(([k,l,col])=>`<button data-wc="${k}" title="${l}" aria-label="${l}" style="background:${col}"></button>`).join('')+'<button class="x" data-wc="" title="Remove highlight" aria-label="Remove highlight">✕</button>';
   const hide=()=>{ pal.classList.remove('open'); WSEL=null; };
   // work out which verse and which words are selected
   const read=()=>{
@@ -3067,9 +3074,14 @@ var WSEL=null;
     const lead=q.length-q.replace(/^\s+/,'').length; start+=lead; q=q.trim(); if(!q) return null;
     const full=verseText(t); let i=0, at=-1; while((at=full.indexOf(q,at+1))>=0&&at<start) i++;
     if(full.substr(start,q.length)!==q) return null;
-    return {b:S.b,c:S.c+1,v:+v.dataset.n,q,i,rect:rr.getBoundingClientRect()};
+    // the Strong's word the selection starts in (or the first one inside it)
+    const w=el(rr.startContainer).closest('.w')||(t.contains(el(rr.endContainer))&&el(rr.endContainer).closest('.w'))||[...t.querySelectorAll('.w')].find(x=>rr.intersectsNode(x))||null;
+    return {b:S.b,c:S.c+1,v:+v.dataset.n,q,i,w,rect:rr.getBoundingClientRect()};
   };
   const place=x=>{
+    const one=!!x.w&&x.q===x.w.textContent.trim();   // exactly that Strong's word
+    pal.querySelector('.wa').innerHTML=(x.w?`<button data-wact="strongs">${one?'Strong’s':'Strong’s: '+esc(x.w.textContent.trim())}</button>`:'')+
+      `<button data-wact="verse">Verse ${x.v}</button><button data-wact="copy">Copy</button>`;
     pal.classList.add('open'); const w=pal.offsetWidth, h=pal.offsetHeight, R=x.rect;
     let top=R.bottom+12; if(top+h>innerHeight-12) top=Math.max(12,R.top-h-58);   // below the words; iOS puts Copy above
     pal.style.top=top+'px'; pal.style.left=Math.max(10,Math.min(innerWidth-w-10,R.left+R.width/2-w/2))+'px';
@@ -3083,6 +3095,15 @@ var WSEL=null;
   pal.addEventListener('pointerdown',e=>{ down=true; e.preventDefault(); },{passive:false});   // keep the selection while tapping a colour
   addEventListener('pointerup',()=>setTimeout(()=>{ down=false; },400));
   pal.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const act=e.target.closest('[data-wact]'), x0=WSEL;
+    if(act&&x0){
+      const a=act.dataset.wact; getSelection().removeAllRanges(); hide();
+      if(a==='strongs'&&x0.w&&x0.w.isConnected) showPop(x0.w.dataset.s.split(' '),x0.w);
+      else if(a==='verse') openPanel(x0.v);
+      else if(a==='copy') copyText(`“${x0.q}” ${NAMES[x0.b]} ${x0.c}:${x0.v} (${VN[S.v]})`);
+      return;
+    }
     const bt=e.target.closest('[data-wc]'); const x=WSEL; if(!bt||!x) return;
     const m=MARKS[mkey(x.b,x.c,x.v)]||{}; let ws=(m.words||[]).slice();
     const t=document.querySelector(`#col [data-n="${x.v}"] .t`), full=t?verseText(t):'';

@@ -261,7 +261,9 @@ function go(b,c,v){S.b=b;S.c=c;openBook=b;closePop();SELV=v||0;draw(v); if(v&&$(
 $('#col').addEventListener('click',e=>{
   if(extrasClick(e)) return;
   const p=e.target.closest('[data-go]'); if(p){const [b,c]=p.dataset.go.split(',').map(Number); turn(b>S.b||(b===S.b&&c>S.c)?1:-1,()=>go(b,c)); return;}
-  const w=e.target.closest('.w'); if(w&&!String(getSelection())){e.stopPropagation(); showPop(w.dataset.s.split(' '),w); return;}
+  // A tap on a word no longer jumps to Strong's: it selects the whole verse. Hold on a word (double-click on a Mac)
+  // to select it; the bar that appears has Strong's for that word, the verse, copy, and the highlight colours.
+  const w=e.target.closest('.w'); if(w&&!String(getSelection())&&searchMode&&!e.target.closest('.res')){e.stopPropagation(); showPop(w.dataset.s.split(' '),w); return;}
   const one=e.target.closest('#one');
   if(one&&!searchMode){ if(String(getSelection())) return; if(e.target.closest('[data-opanel]')) return openPanel(ONE); if(e.target.closest('button,a')) return; stepVerse(e.clientX-one.getBoundingClientRect().left<one.offsetWidth/3?-1:1); return; }
   const s2=e.target.closest('[data-v2]'); if(s2){ const v=s2.dataset.v2; load(v).then(()=>{S.v2=v; draw(firstVisibleVerse()||0);}); return; }

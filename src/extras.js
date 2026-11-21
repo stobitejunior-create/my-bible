@@ -691,7 +691,7 @@ function wordChips(mk){
 var WSEL=null;
 {
   const pal=$('#wpal'); let hideT=0, down=false;
-  pal.innerHTML='<span class="wl">Highlight</span>'+COLORS.map(([k,l,col])=>`<button data-wc="${k}" title="${l}" aria-label="${l}" style="background:${col}"></button>`).join('')+'<button class="x" data-wc="" title="Remove highlight" aria-label="Remove highlight">✕</button>';
+  pal.innerHTML='<div class="wa"></div><span class="wl">Highlight</span>'+COLORS.map(([k,l,col])=>`<button data-wc="${k}" title="${l}" aria-label="${l}" style="background:${col}"></button>`).join('')+'<button class="x" data-wc="" title="Remove highlight" aria-label="Remove highlight">✕</button>';
   const hide=()=>{ pal.classList.remove('open'); WSEL=null; };
   // work out which verse and which words are selected
   const read=()=>{
@@ -706,9 +706,14 @@ var WSEL=null;
     const lead=q.length-q.replace(/^\s+/,'').length; start+=lead; q=q.trim(); if(!q) return null;
     const full=verseText(t); let i=0, at=-1; while((at=full.indexOf(q,at+1))>=0&&at<start) i++;
     if(full.substr(start,q.length)!==q) return null;
-    return {b:S.b,c:S.c+1,v:+v.dataset.n,q,i,rect:rr.getBoundingClientRect()};
+    // the Strong's word the selection starts in (or the first one inside it)
+    const w=el(rr.startContainer).closest('.w')||(t.contains(el(rr.endContainer))&&el(rr.endContainer).closest('.w'))||[...t.querySelectorAll('.w')].find(x=>rr.intersectsNode(x))||null;
+    return {b:S.b,c:S.c+1,v:+v.dataset.n,q,i,w,rect:rr.getBoundingClientRect()};
   };
   const place=x=>{
+    const one=!!x.w&&x.q===x.w.textContent.trim();   // exactly that Strong's word
+    pal.querySelector('.wa').innerHTML=(x.w?`<button data-wact="strongs">${one?'Strong’s':'Strong’s: '+esc(x.w.textContent.trim())}</button>`:'')+
+      `<button data-wact="verse">Verse ${x.v}</button><button data-wact="copy">Copy</button>`;
     pal.classList.add('open'); const w=pal.offsetWidth, h=pal.offsetHeight, R=x.rect;
     let top=R.bottom+12; if(top+h>innerHeight-12) top=Math.max(12,R.top-h-58);   // below the words; iOS puts Copy above
     pal.style.top=top+'px'; pal.style.left=Math.max(10,Math.min(innerWidth-w-10,R.left+R.width/2-w/2))+'px';
@@ -722,6 +727,15 @@ var WSEL=null;
   pal.addEventListener('pointerdown',e=>{ down=true; e.preventDefault(); },{passive:false});   // keep the selection while tapping a colour
   addEventListener('pointerup',()=>setTimeout(()=>{ down=false; },400));
   pal.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const act=e.target.closest('[data-wact]'), x0=WSEL;
+    if(act&&x0){
+      const a=act.dataset.wact; getSelection().removeAllRanges(); hide();
+      if(a==='strongs'&&x0.w&&x0.w.isConnected) showPop(x0.w.dataset.s.split(' '),x0.w);
+      else if(a==='verse') openPanel(x0.v);
+      else if(a==='copy') copyText(`“${x0.q}” ${NAMES[x0.b]} ${x0.c}:${x0.v} (${VN[S.v]})`);
+      return;
+    }
     const bt=e.target.closest('[data-wc]'); const x=WSEL; if(!bt||!x) return;
     const m=MARKS[mkey(x.b,x.c,x.v)]||{}; let ws=(m.words||[]).slice();
     const t=document.querySelector(`#col [data-n="${x.v}"] .t`), full=t?verseText(t):'';

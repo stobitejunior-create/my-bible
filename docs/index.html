@@ -3210,6 +3210,24 @@ document.addEventListener('click',e=>{ if(VBAR&&!e.target.closest('#vbar,#scroll
 // moving to another chapter lets go of the verse
 { const keep=paintWords; paintWords=function(){ keep(); if(VBAR&&VBAR.k!==S.b+'.'+S.c) vbarClose(); else if(VBAR){ const el=document.getElementById('v'+VBAR.n); el&&el.classList.add('sel'); } }; }
 
+// ---------- Telling a tap from a scroll ----------
+// iPhone sends a "click" when a finger lands to stop the page gliding, or lifts after a small drag, so verses were
+// being picked while scrolling. A touch only counts as a tap on the text when the page wasn't moving as it landed,
+// the finger stayed put, the page didn't scroll during it, and it was short.
+{ const sc=$('#scroll'); let lastScroll=0, T=null;
+  sc.addEventListener('scroll',()=>{ lastScroll=performance.now(); if(T) T.scrolled=true; },{passive:true});
+  sc.addEventListener('touchstart',e=>{ const t=e.touches[0]; const now=performance.now();
+    T={x:t.clientX,y:t.clientY,t:now,top:sc.scrollTop,gliding:now-lastScroll<160,moved:0,multi:e.touches.length>1,scrolled:false}; },{passive:true,capture:true});
+  sc.addEventListener('touchmove',e=>{ if(!T) return; const t=e.touches[0]; T.moved=Math.max(T.moved,Math.hypot(t.clientX-T.x,t.clientY-T.y)); if(e.touches.length>1) T.multi=true; },{passive:true,capture:true});
+  sc.addEventListener('touchend',()=>{ if(T) T.end=performance.now(); },{passive:true,capture:true});
+  sc.addEventListener('click',e=>{
+    if(!T||!T.end||performance.now()-T.end>700) return;          // a mouse click, or no recent touch
+    const bad=T.gliding||T.scrolled||T.multi||T.moved>9||Math.abs(sc.scrollTop-T.top)>3||T.end-T.t>550;
+    T=null;
+    if(bad){ e.stopPropagation(); e.preventDefault(); }
+  },true);
+}
+
 // ===================== Library and book reader (EPUB and PDF) =====================
 // Mac app: every book in Ben's iCloud Drive › Authors folder (bible://app/lib/…, see mac/Library.swift).
 // Phone / browser: books added from the Files app, kept in this device's IndexedDB ("library").

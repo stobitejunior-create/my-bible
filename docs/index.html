@@ -777,6 +777,21 @@ main>.bar.away{transform:translateY(-100%)}
 .wch{display:flex;flex-wrap:wrap;gap:6px}
 .wch span{display:inline-flex;align-items:center;gap:4px;border-radius:980px;padding:3px 4px 3px 10px;font:14px ui-serif,Georgia,serif;color:var(--ink)}
 .wch button{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:12px}
+/* the bar that appears when you tap a verse */
+.v.sel{box-shadow:none!important;background:color-mix(in srgb,var(--accent) 9%,transparent)!important}
+#vbar{position:fixed;z-index:46;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);opacity:0;pointer-events:none;transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .15s;
+  display:flex;align-items:center;gap:8px;background:var(--card);border-radius:980px;box-shadow:var(--shadow);padding:8px 8px 8px 16px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:calc(100vw - 24px)}
+#vbar.open{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+#vbar .vbr{font-size:12.5px;font-weight:600;color:var(--muted);white-space:nowrap;margin-right:4px}
+#vbar button{flex:none;width:28px;height:28px;border-radius:50%;border:0;padding:0;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+#vbar button.on{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--accent)}
+#vbar .x{background:var(--hover);color:var(--muted);font-size:12px;box-shadow:none} #vbar .x:disabled{opacity:.35}
+#vbar .more{width:auto;border-radius:980px;padding:0 14px;height:32px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;box-shadow:none;margin-left:2px}
+@media (max-width:700px){
+  #vbar{display:grid;grid-template-columns:repeat(7,34px);gap:10px 9px;border-radius:22px;padding:12px 14px;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  #vbar .vbr{grid-column:1/-1;margin:0 0 -2px 2px}
+  #vbar button{width:34px;height:34px} #vbar .more{grid-column:span 2;width:auto;height:34px}
+}
 /* touch screens: holding on the text doesn't start the phone's own select/copy menu; tapping a verse is the way in */
 @media (hover:none){#verses,#verses *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}
 .sch{display:flex;flex-wrap:wrap;gap:6px}
@@ -832,6 +847,7 @@ main>.bar.away{transform:translateY(-100%)}
 </div>
 <div id="toast"></div>
 <div id="wpal" role="toolbar" aria-label="Highlight words"></div>
+<div id="vbar" role="toolbar" aria-label="Highlight verse"></div>
 <div id="pop" role="dialog" aria-label="Strong's definition"></div>
 <div id="prefs" class="sheet" role="dialog" aria-label="Reading settings"></div>
 <div id="randp" class="sheet" role="dialog" aria-label="Random reading"></div>
@@ -1398,7 +1414,7 @@ $('#col').addEventListener('click',e=>{
   const s2=e.target.closest('[data-v2]'); if(s2){ const v=s2.dataset.v2; load(v).then(()=>{S.v2=v; draw(firstVisibleVerse()||0);}); return; }
   const fb=e.target.closest('[data-fc]'); if(fb){ showMarks(fb.dataset.fc); return; }
   const r=e.target.closest('.res'); if(r){go(+r.dataset.b,+r.dataset.c,+r.dataset.v+1); return;}
-  const v=e.target.closest('.v'); if(v&&!searchMode){ if(String(getSelection())) return; openPanel(+v.dataset.n); }
+  const v=e.target.closest('.v'); if(v&&!searchMode){ if(String(getSelection())) return; tapVerse(+v.dataset.n); }
 });
 // one step back or forward (a verse in one-verse layout, otherwise a chapter), without animation
 function rawStep(d){ if(oneMode()) return stepVerse(d); const p=nextCh(d); p&&go(p[0],p[1]); }
@@ -1997,7 +2013,7 @@ document.addEventListener('keydown',e=>{
   }
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); openNav(true); return;}
   if(e.target.matches&&e.target.matches('input,textarea,select')) return;
-  if(e.key==='Escape'){ closePop(); closeSheets(); $('#modal').classList.remove('open'); if($('#bodyg').classList.contains('withpanel')) closePanel(); else if(searchMode) draw(); }
+  if(e.key==='Escape'){ vbarClose();  closePop(); closeSheets(); $('#modal').classList.remove('open'); if($('#bodyg').classList.contains('withpanel')) closePanel(); else if(searchMode) draw(); }
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   if(e.key==='ArrowRight') $('#next').click();
   if(e.key==='ArrowLeft') $('#prev').click();
@@ -3148,8 +3164,42 @@ $('#scroll').addEventListener('click',e=>{
     if(y<r.top-6||y>r.bottom+6) continue;
     const d=Math.max(0,r.top-y,y-r.bottom)*4+(e.clientX<r.left?r.left-e.clientX:e.clientX>r.right?e.clientX-r.right:0);
     if(d<bd){ bd=d; best=v; } } });
-  if(best&&e.clientX>col.left-80&&e.clientX<col.right+80) openPanel(+best.dataset.n);
+  if(best&&e.clientX>col.left-80&&e.clientX<col.right+80) tapVerse(+best.dataset.n);
+  else vbarClose();
 });
+
+// ---------- Tapping a verse ----------
+// A tap gives the verse a soft highlight and a small bar of highlight colours with a More button; More opens the full
+// verse view (note, bookmark, copy, Strong's, cross references). Tap the verse again, or anywhere else, to let go.
+// If the verse view is already open (side panel on a Mac or iPad), a tap moves it straight to the new verse.
+var VBAR=null;
+function tapVerse(n){
+  if($('#bodyg').classList.contains('withpanel')) return openPanel(n);
+  if(VBAR&&VBAR.n===n&&VBAR.k===S.b+'.'+S.c) return vbarClose();
+  SELV=n; VBAR={n,k:S.b+'.'+S.c};
+  document.querySelectorAll('#verses .v.sel').forEach(x=>x.classList.remove('sel'));
+  const el=document.getElementById('v'+n); el&&el.classList.add('sel');
+  vbarDraw(); $('#vbar').classList.add('open');
+}
+function vbarDraw(){
+  if(!VBAR) return; const mk=MARKS[mkey(S.b,S.c+1,VBAR.n)]||{};
+  $('#vbar').innerHTML=`<span class="vbr">${NAMES[S.b]} ${S.c+1}:${VBAR.n}</span>`+COLORS.map(([k,l,col])=>`<button data-vc="${k}" title="${l}" aria-label="${l}" style="background:${col}" class="${mk.color===k?'on':''}"></button>`).join('')+
+    `<button class="x" data-vc="" title="No highlight" aria-label="No highlight"${mk.color?'':' disabled'}>✕</button><button class="more" data-vmore>More</button>`;
+}
+function vbarClose(){
+  if(!VBAR) return; VBAR=null; $('#vbar').classList.remove('open');
+  if(!$('#bodyg').classList.contains('withpanel')){ SELV=0; document.querySelectorAll('#verses .v.sel').forEach(x=>x.classList.remove('sel')); }
+}
+$('#vbar').addEventListener('click',async e=>{
+  e.stopPropagation(); if(!VBAR) return; const n=VBAR.n;
+  if(e.target.closest('[data-vmore]')){ vbarClose(); return openPanel(n); }
+  const b=e.target.closest('[data-vc]'); if(!b) return;
+  const cur=(MARKS[mkey(S.b,S.c+1,n)]||{}).color, c=b.dataset.vc===cur?'':b.dataset.vc;   // the same colour again takes it off
+  await setMark(S.b,S.c+1,n,{color:c}); vbarClose();
+});
+document.addEventListener('click',e=>{ if(VBAR&&!e.target.closest('#vbar,#scroll')) vbarClose(); });
+// moving to another chapter lets go of the verse
+{ const keep=paintWords; paintWords=function(){ keep(); if(VBAR&&VBAR.k!==S.b+'.'+S.c) vbarClose(); else if(VBAR){ const el=document.getElementById('v'+VBAR.n); el&&el.classList.add('sel'); } }; }
 
 // ===================== Library and book reader (EPUB and PDF) =====================
 // Mac app: every book in Ben's iCloud Drive › Authors folder (bible://app/lib/…, see mac/Library.swift).

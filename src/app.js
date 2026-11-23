@@ -269,7 +269,7 @@ $('#col').addEventListener('click',e=>{
   const s2=e.target.closest('[data-v2]'); if(s2){ const v=s2.dataset.v2; load(v).then(()=>{S.v2=v; draw(firstVisibleVerse()||0);}); return; }
   const fb=e.target.closest('[data-fc]'); if(fb){ showMarks(fb.dataset.fc); return; }
   const r=e.target.closest('.res'); if(r){go(+r.dataset.b,+r.dataset.c,+r.dataset.v+1); return;}
-  const v=e.target.closest('.v'); if(v&&!searchMode){ if(String(getSelection())) return; openPanel(+v.dataset.n); }
+  const v=e.target.closest('.v'); if(v&&!searchMode){ if(String(getSelection())) return; tapVerse(+v.dataset.n); }
 });
 // one step back or forward (a verse in one-verse layout, otherwise a chapter), without animation
 function rawStep(d){ if(oneMode()) return stepVerse(d); const p=nextCh(d); p&&go(p[0],p[1]); }
@@ -868,7 +868,7 @@ document.addEventListener('keydown',e=>{
   }
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault(); openNav(true); return;}
   if(e.target.matches&&e.target.matches('input,textarea,select')) return;
-  if(e.key==='Escape'){ closePop(); closeSheets(); $('#modal').classList.remove('open'); if($('#bodyg').classList.contains('withpanel')) closePanel(); else if(searchMode) draw(); }
+  if(e.key==='Escape'){ vbarClose();  closePop(); closeSheets(); $('#modal').classList.remove('open'); if($('#bodyg').classList.contains('withpanel')) closePanel(); else if(searchMode) draw(); }
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   if(e.key==='ArrowRight') $('#next').click();
   if(e.key==='ArrowLeft') $('#prev').click();

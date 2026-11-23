@@ -777,6 +777,21 @@ main>.bar.away{transform:translateY(-100%)}
 .wch{display:flex;flex-wrap:wrap;gap:6px}
 .wch span{display:inline-flex;align-items:center;gap:4px;border-radius:980px;padding:3px 4px 3px 10px;font:14px ui-serif,Georgia,serif;color:var(--ink)}
 .wch button{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:12px}
+/* the bar that appears when you tap a verse */
+.v.sel{box-shadow:none!important;background:color-mix(in srgb,var(--accent) 9%,transparent)!important}
+#vbar{position:fixed;z-index:46;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);opacity:0;pointer-events:none;transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .15s;
+  display:flex;align-items:center;gap:8px;background:var(--card);border-radius:980px;box-shadow:var(--shadow);padding:8px 8px 8px 16px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:calc(100vw - 24px)}
+#vbar.open{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+#vbar .vbr{font-size:12.5px;font-weight:600;color:var(--muted);white-space:nowrap;margin-right:4px}
+#vbar button{flex:none;width:28px;height:28px;border-radius:50%;border:0;padding:0;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+#vbar button.on{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--accent)}
+#vbar .x{background:var(--hover);color:var(--muted);font-size:12px;box-shadow:none} #vbar .x:disabled{opacity:.35}
+#vbar .more{width:auto;border-radius:980px;padding:0 14px;height:32px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;box-shadow:none;margin-left:2px}
+@media (max-width:700px){
+  #vbar{display:grid;grid-template-columns:repeat(7,34px);gap:10px 9px;border-radius:22px;padding:12px 14px;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  #vbar .vbr{grid-column:1/-1;margin:0 0 -2px 2px}
+  #vbar button{width:34px;height:34px} #vbar .more{grid-column:span 2;width:auto;height:34px}
+}
 /* touch screens: holding on the text doesn't start the phone's own select/copy menu; tapping a verse is the way in */
 @media (hover:none){#verses,#verses *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}
 .sch{display:flex;flex-wrap:wrap;gap:6px}
@@ -821,6 +836,7 @@ main>.bar.away{transform:translateY(-100%)}
 </div>
 <div id="toast"></div>
 <div id="wpal" role="toolbar" aria-label="Highlight words"></div>
+<div id="vbar" role="toolbar" aria-label="Highlight verse"></div>
 <div id="pop" role="dialog" aria-label="Strong's definition"></div>
 <div id="prefs" class="sheet" role="dialog" aria-label="Reading settings"></div>
 <div id="randp" class="sheet" role="dialog" aria-label="Random reading"></div>

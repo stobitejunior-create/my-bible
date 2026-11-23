@@ -775,5 +775,39 @@ $('#scroll').addEventListener('click',e=>{
     if(y<r.top-6||y>r.bottom+6) continue;
     const d=Math.max(0,r.top-y,y-r.bottom)*4+(e.clientX<r.left?r.left-e.clientX:e.clientX>r.right?e.clientX-r.right:0);
     if(d<bd){ bd=d; best=v; } } });
-  if(best&&e.clientX>col.left-80&&e.clientX<col.right+80) openPanel(+best.dataset.n);
+  if(best&&e.clientX>col.left-80&&e.clientX<col.right+80) tapVerse(+best.dataset.n);
+  else vbarClose();
 });
+
+// ---------- Tapping a verse ----------
+// A tap gives the verse a soft highlight and a small bar of highlight colours with a More button; More opens the full
+// verse view (note, bookmark, copy, Strong's, cross references). Tap the verse again, or anywhere else, to let go.
+// If the verse view is already open (side panel on a Mac or iPad), a tap moves it straight to the new verse.
+var VBAR=null;
+function tapVerse(n){
+  if($('#bodyg').classList.contains('withpanel')) return openPanel(n);
+  if(VBAR&&VBAR.n===n&&VBAR.k===S.b+'.'+S.c) return vbarClose();
+  SELV=n; VBAR={n,k:S.b+'.'+S.c};
+  document.querySelectorAll('#verses .v.sel').forEach(x=>x.classList.remove('sel'));
+  const el=document.getElementById('v'+n); el&&el.classList.add('sel');
+  vbarDraw(); $('#vbar').classList.add('open');
+}
+function vbarDraw(){
+  if(!VBAR) return; const mk=MARKS[mkey(S.b,S.c+1,VBAR.n)]||{};
+  $('#vbar').innerHTML=`<span class="vbr">${NAMES[S.b]} ${S.c+1}:${VBAR.n}</span>`+COLORS.map(([k,l,col])=>`<button data-vc="${k}" title="${l}" aria-label="${l}" style="background:${col}" class="${mk.color===k?'on':''}"></button>`).join('')+
+    `<button class="x" data-vc="" title="No highlight" aria-label="No highlight"${mk.color?'':' disabled'}>✕</button><button class="more" data-vmore>More</button>`;
+}
+function vbarClose(){
+  if(!VBAR) return; VBAR=null; $('#vbar').classList.remove('open');
+  if(!$('#bodyg').classList.contains('withpanel')){ SELV=0; document.querySelectorAll('#verses .v.sel').forEach(x=>x.classList.remove('sel')); }
+}
+$('#vbar').addEventListener('click',async e=>{
+  e.stopPropagation(); if(!VBAR) return; const n=VBAR.n;
+  if(e.target.closest('[data-vmore]')){ vbarClose(); return openPanel(n); }
+  const b=e.target.closest('[data-vc]'); if(!b) return;
+  const cur=(MARKS[mkey(S.b,S.c+1,n)]||{}).color, c=b.dataset.vc===cur?'':b.dataset.vc;   // the same colour again takes it off
+  await setMark(S.b,S.c+1,n,{color:c}); vbarClose();
+});
+document.addEventListener('click',e=>{ if(VBAR&&!e.target.closest('#vbar,#scroll')) vbarClose(); });
+// moving to another chapter lets go of the verse
+{ const keep=paintWords; paintWords=function(){ keep(); if(VBAR&&VBAR.k!==S.b+'.'+S.c) vbarClose(); else if(VBAR){ const el=document.getElementById('v'+VBAR.n); el&&el.classList.add('sel'); } }; }

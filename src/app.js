@@ -96,8 +96,17 @@ function render(str,o){
       const f=items[0], ls=f.t.match(/^[\s“‘"(\[—–-]*/)[0]; f.t=f.t.slice(ls.length); lead+=ls.trim()?wrap(ls,f.em,f.red&&!f.title,null):ls;
       const l=items[items.length-1], ts=l.t.match(/[\s,.;:!?)”’"\]—–-]*$/)[0]; l.t=l.t.slice(0,l.t.length-ts.length); trail=ts.trim()?wrap(ts,l.em,l.red&&!l.title,null):ts;
     }
-    let html=items.map(x=>x.gap?GAP:(x.t?wrap(x.t,x.em,x.red&&!x.title,o.q):'')).join('');
-    if(o.strongs&&g.s.length&&html) html=`<span class="w${o.hl&&g.s.includes(o.hl)?' hl':''}" data-s="${g.s.join(' ')}">${html}</span>`;
+    const piece=x=>x.gap?GAP:(x.t?wrap(x.t,x.em,x.red&&!x.title,o.q):'');
+    let html;
+    if(o.strongs&&g.s.length&&items.length){
+      // Like most Bible apps, a Strong's number that covers a phrase ("There was") marks only its last word.
+      let k=items.length-1; while(k>0&&(items[k].gap||!items[k].t.trim())) k--;
+      const l=items[k], at=l.t.search(/\S+$/); let pre=items.slice(0,k), last=[l];
+      if(at>0){ pre=pre.concat({...l,t:l.t.slice(0,at)}); last=[{...l,t:l.t.slice(at)}]; }
+      last=last.concat(items.slice(k+1));
+      const inner=last.map(piece).join('');
+      html=pre.map(piece).join('')+(inner?`<span class="w${o.hl&&g.s.includes(o.hl)?' hl':''}" data-s="${g.s.join(' ')}">${inner}</span>`:'');
+    } else html=items.map(piece).join('');
     const out=lead+html+trail;
     if(isTitle) ttl+=out; else body+=out;
   }

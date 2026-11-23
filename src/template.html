@@ -777,6 +777,8 @@ main>.bar.away{transform:translateY(-100%)}
 .wch{display:flex;flex-wrap:wrap;gap:6px}
 .wch span{display:inline-flex;align-items:center;gap:4px;border-radius:980px;padding:3px 4px 3px 10px;font:14px ui-serif,Georgia,serif;color:var(--ink)}
 .wch button{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:12px}
+/* touch screens: holding on the text doesn't start the phone's own select/copy menu; tapping a verse is the way in */
+@media (hover:none){#verses,#verses *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}
 .sch{display:flex;flex-wrap:wrap;gap:6px}
 .sch button{border:.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:980px;padding:5px 11px;font:14px ui-serif,Georgia,serif}
 .sch button:hover{border-color:var(--accent);color:var(--accent)}

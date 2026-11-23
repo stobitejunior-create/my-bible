@@ -764,3 +764,16 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('#wchips [data-sw]'); if(!b) return; e.stopPropagation();
   const w=[...document.querySelectorAll('#col #v'+SELV+' .t .w')][+b.dataset.sw]; if(w) showPop(w.dataset.s.split(' '),b);
 },true);
+
+// A tap on the blank part of a line (the end of a short line, the margins, the gap between verses) picks the verse on
+// that line, the same as tapping its words.
+$('#scroll').addEventListener('click',e=>{
+  if(searchMode||oneMode()||String(getSelection())) return;
+  if(e.target.closest('.v,button,a,input,textarea,select,.hd,.next,#pop')) return;
+  const col=$('#col').getBoundingClientRect(), y=e.clientY; let best=null, bd=1e9;
+  document.querySelectorAll('#verses .v').forEach(v=>{ for(const r of v.getClientRects()){
+    if(y<r.top-6||y>r.bottom+6) continue;
+    const d=Math.max(0,r.top-y,y-r.bottom)*4+(e.clientX<r.left?r.left-e.clientX:e.clientX>r.right?e.clientX-r.right:0);
+    if(d<bd){ bd=d; best=v; } } });
+  if(best&&e.clientX>col.left-80&&e.clientX<col.right+80) openPanel(+best.dataset.n);
+});

@@ -777,6 +777,9 @@ main>.bar.away{transform:translateY(-100%)}
 .wch{display:flex;flex-wrap:wrap;gap:6px}
 .wch span{display:inline-flex;align-items:center;gap:4px;border-radius:980px;padding:3px 4px 3px 10px;font:14px ui-serif,Georgia,serif;color:var(--ink)}
 .wch button{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:50%;font-size:12px}
+.sch{display:flex;flex-wrap:wrap;gap:6px}
+.sch button{border:.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:980px;padding:5px 11px;font:14px ui-serif,Georgia,serif}
+.sch button:hover{border-color:var(--accent);color:var(--accent)}
 .pn .hint{font-size:11.5px;color:var(--faint);margin-top:8px}
 </style>
 <meta name="robots" content="noindex,nofollow">
@@ -3045,6 +3048,8 @@ function wordsApply(t,words){
   });
 }
 function paintWords(){
+  if(document.querySelector('#col .hw')) document.querySelectorAll('#col .hw').forEach(x=>{ const p=x.parentNode; x.replaceWith(...x.childNodes); p.normalize(); });
+  return;   // word highlighting was taken out (2026-11-23): only whole verses are highlighted
   document.querySelectorAll('#col .v[data-n],#col .ov[data-n]').forEach(el=>{
     const m=MARKS[mkey(S.b,S.c+1,+el.dataset.n)], ws=m&&m.words;
     if(!ws&&!el.querySelector('.hw')) return;
@@ -3052,6 +3057,7 @@ function paintWords(){
   });
 }
 function wordChips(mk){
+  return strongsChips(mk);
   const ws=mk&&mk.words||[]; const col=k=>(COLORS.find(c=>c[0]===k)||[])[2]||'#ccc';
   return ws.length?`<div class="lb">Highlighted words</div><div class="wch">${ws.map((w,j)=>`<span class="hw c-${w.c}">${esc(w.q.length>40?w.q.slice(0,38)+'…':w.q)}<button data-wdel="${j}" title="Remove" aria-label="Remove this highlight">✕</button></span>`).join('')}</div>`
     :'<div class="hint">Tip: select words in the verse to highlight just those words.</div>';
@@ -3086,7 +3092,7 @@ var WSEL=null;
     let top=R.bottom+12; if(top+h>innerHeight-12) top=Math.max(12,R.top-h-58);   // below the words; iOS puts Copy above
     pal.style.top=top+'px'; pal.style.left=Math.max(10,Math.min(innerWidth-w-10,R.left+R.width/2-w/2))+'px';
   };
-  document.addEventListener('selectionchange',()=>{
+  if(0) document.addEventListener('selectionchange',()=>{
     clearTimeout(hideT);
     const x=read();
     if(x){ WSEL=x; clearTimeout(place.t); place.t=setTimeout(()=>{ if(WSEL===x) place(x); },120); }
@@ -3118,6 +3124,17 @@ var WSEL=null;
   });
   $('#scroll').addEventListener('scroll',()=>{ if(pal.classList.contains('open')&&WSEL){ const x=read(); if(x){ WSEL=x; place(x); } } },{passive:true});
 }
+
+// Strong's for the open verse: one button per original-language word (KJV with Strong's), shown in the verse panel.
+function strongsChips(){
+  const el=SELV&&document.querySelector('#col #v'+SELV); const ws=el?[...el.querySelectorAll('.t .w')]:[];
+  if(!ws.length) return '';
+  return `<div class="lb">Strong’s</div><div class="sch">${ws.map((w,j)=>`<button data-sw="${j}">${esc(w.textContent.trim())}</button>`).join('')}</div>`;
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('#wchips [data-sw]'); if(!b) return; e.stopPropagation();
+  const w=[...document.querySelectorAll('#col #v'+SELV+' .t .w')][+b.dataset.sw]; if(w) showPop(w.dataset.s.split(' '),b);
+},true);
 
 // ===================== Library and book reader (EPUB and PDF) =====================
 // Mac app: every book in Ben's iCloud Drive › Authors folder (bible://app/lib/…, see mac/Library.swift).

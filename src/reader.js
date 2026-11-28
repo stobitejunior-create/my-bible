@@ -53,6 +53,25 @@ function parseXML(s,type){
 }
 const byTag=(d,t)=>[...d.getElementsByTagNameNS('*',t)];
 
+// The cover picture, found the ways publishers mark it: EPUB 3 "cover-image"; EPUB 2 <meta name="cover"> (which should
+// name a manifest id but often names the file instead, e.g. "FORGIVENESS.jpg"); the <guide> cover page's picture; an
+// image called "cover"; and last, the first picture on the book's first page.
+async function epubFindCover(z,opf,man,base,spine){
+  const items=Object.values(man), isImg=x=>x&&/image/.test(x.type)&&z.has(x.href);
+  const c3=items.find(x=>/cover-image/.test(x.props)); if(isImg(c3)) return c3.href;
+  const cid=(byTag(opf,'meta').find(m=>m.getAttribute('name')==='cover')||{getAttribute:()=>null}).getAttribute('content');
+  if(cid){ if(isImg(man[cid])) return man[cid].href;
+    const byFile=items.find(x=>isImg(x)&&(x.href===pjoin(base,cid)||x.href.endsWith('/'+cid)||x.href===cid)); if(byFile) return byFile.href;
+    if(z.has(pjoin(base,cid))&&/\.(jpe?g|png|gif|webp)$/i.test(cid)) return pjoin(base,cid); }
+  const pageImg=async href=>{ if(!href||!z.has(href)) return null; const t=await z.text(href)||'';
+    const m=t.match(/<img[^>]+src\s*=\s*["']([^"']+)["']/i)||t.match(/<image[^>]+(?:xlink:)?href\s*=\s*["']([^"']+)["']/i);
+    if(!m) return null; const p=pjoin(pdir(href),decodeURIComponent(m[1])); return z.has(p)?p:null; };
+  const g=byTag(opf,'reference').find(r=>/cover/i.test(r.getAttribute('type')||''));
+  if(g){ const p=await pageImg(pjoin(base,(g.getAttribute('href')||'').split('#')[0])); if(p) return p; }
+  const named=items.find(x=>isImg(x)&&/cover/i.test(x.href)); if(named) return named.href;
+  const cp=items.find(x=>/html/.test(x.type)&&/cover/i.test(x.href)); if(cp){ const p=await pageImg(cp.href); if(p) return p; }
+  return spine[0]?await pageImg(spine[0].href):null;
+}
 async function epubOpen(buf){
   const z=await zipOpen(buf);
   const cont=await z.text('META-INF/container.xml'); if(!cont) throw new Error('This EPUB has no contents file.');
@@ -63,8 +82,7 @@ async function epubOpen(buf){
   const man={}; byTag(opf,'item').forEach(it=>{ man[it.getAttribute('id')]={href:pjoin(base,it.getAttribute('href')||''),type:it.getAttribute('media-type')||'',props:it.getAttribute('properties')||''}; });
   const spine=byTag(opf,'itemref').map(r=>man[r.getAttribute('idref')]).filter(x=>x&&/html|xml/.test(x.type)&&z.has(x.href.split('#')[0])).map(x=>({href:x.href.split('#')[0],size:Math.max(400,z.size(x.href.split('#')[0]))}));
   if(!spine.length) throw new Error('This EPUB has no chapters.');
-  let coverId=(byTag(opf,'meta').find(m=>m.getAttribute('name')==='cover')||{getAttribute:()=>null}).getAttribute('content');
-  let cover=(coverId&&man[coverId]&&/image/.test(man[coverId].type)&&man[coverId].href)||(Object.values(man).find(x=>/cover-image/.test(x.props))||{}).href||(Object.values(man).find(x=>/image/.test(x.type)&&/cover/i.test(x.href))||{}).href||null;
+  const cover=await epubFindCover(z,opf,man,base,spine);
   // contents: EPUB 3 nav, else EPUB 2 NCX
   let toc=[];
   const nav=Object.values(man).find(x=>/\bnav\b/.test(x.props));
@@ -112,6 +130,18 @@ async function libLoad(force){
   if(LIB.mac){ try{ const j=await (await fetch(force?'lib/index-fresh.json':'lib/index.json')).json(); LIB.books=(j.books||[]).map(b=>({...b,f:b.f||b.t})); LIB.folder=j.folder||''; LIB.missing=!!j.missing; }catch(e){ LIB.books=[]; } }
   else { try{ LIB.books=await LIBDB.all('books'); }catch(e){ LIB.books=[]; } LIB.cat=store.get('libcat',[]); }
   LIB.loaded=true;
+}
+// Books added before the cover finder learned more ways to find covers: look again, once, in the background.
+async function libRecover(){
+  if(LIB.mac||libRecover.on) return; libRecover.on=true; let got=0;
+  try{ for(const b of LIB.books){
+    if(b.k==='pdf'||b.cv2) continue;
+    try{ if(!(await LIBDB.get('covers',b.id))){ const blob=await LIBDB.get('files',b.id);
+      if(blob){ const B=await epubOpen(await blob.arrayBuffer()); const cb=B.cover&&await B.z.bytes(B.cover);
+        if(cb){ await LIBDB.put('covers',new Blob([cb],{type:MIME[extOf(B.cover)]||'image/jpeg'}),b.id); delete COVCACHE[b.id]; got++; } } } }catch(e){}
+    b.cv2=1; await LIBDB.put('books',b).catch(()=>{});
+  } }finally{ libRecover.on=false; }
+  if(got){ LIB.keepScroll=true; libRender(); }
 }
 async function libBytes(b){
   if(LIB.mac){ const r=await fetch('lib/file/'+b.id); if(!r.ok) throw new Error(b.k==='mobi'?'Couldn’t convert this Kindle book (is calibre installed?).':'Couldn’t open this book. Is iCloud Drive connected?'); return {buf:await r.arrayBuffer(),kind:/pdf/.test(r.headers.get('Content-Type')||'')?'pdf':'epub'}; }
@@ -195,6 +225,7 @@ function libFiltered(){
 }
 function libRender(){
   const el=$('#lib'); if(!el.classList.contains('open')) return;
+  if(LIB.loaded&&!LIB.mac&&!libRecover.done){ libRecover.done=1; setTimeout(()=>libRecover(),800); }
   const mac=LIB.mac, reading=LIB.books.filter(b=>posGet(b)).sort((a,b)=>posGet(b).t-posGet(a).t).slice(0,12);
   const head=`<div class="lbh"><button class="lbback" data-lclose>‹ Bible</button><h2>${LIB.author!=null?esc(LIB.author||'Unknown author'):'Library'}</h2>
     ${mac?'':'<button class="lbadd" data-ladd>＋ Add books</button>'}</div>

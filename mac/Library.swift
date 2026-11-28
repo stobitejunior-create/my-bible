@@ -135,7 +135,7 @@ final class BookLibrary {
 
     // MARK: covers (Quick Look makes them for EPUB and PDF; it downloads the book from iCloud if needed)
     func cover(_ id: String, done: @escaping (Data?) -> Void) {
-        let file = caches.appendingPathComponent("covers/\(id).jpg")
+        let file = caches.appendingPathComponent("covers2/\(id).jpg")   // covers2: retry books the old finder missed
         if let d = try? Data(contentsOf: file) { return done(d.isEmpty ? nil : d) }
         guard let b = book(id) else { return done(nil) }
         try? fm.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -149,7 +149,7 @@ final class BookLibrary {
         // EPUB: the cover picture named in the book itself (fast, and what the publisher chose)
         if b.kind == "epub", let d = Self.epubCover(b.url).flatMap({ Self.small($0) }) { return save(d) }
         if b.kind == "mobi" {
-            let meta = "/Applications/calibre.app/Contents/MacOS/ebook-meta", tmp = caches.appendingPathComponent("covers/\(id).tmp.jpg")
+            let meta = "/Applications/calibre.app/Contents/MacOS/ebook-meta", tmp = caches.appendingPathComponent("covers2/\(id).tmp.jpg")
             guard fm.fileExists(atPath: meta) else { return save(nil) }
             run(meta, [b.url.path, "--get-cover=" + tmp.path], cwd: nil)
             let d = try? Data(contentsOf: tmp); try? fm.removeItem(at: tmp)
@@ -183,7 +183,29 @@ final class BookLibrary {
         if href == nil, let id = EpubLibrary.first(#"<meta[^>]*name="cover"[^>]*content="([^"]+)""#, opf) ?? EpubLibrary.first(#"<meta[^>]*content="([^"]+)"[^>]*name="cover""#, opf) {
             href = items.first(where: { $0["id"] == id && isImg($0) })?["href"]
         }
+        // <meta name="cover"> often names the file ("FORGIVENESS.jpg") instead of a manifest id
+        if href == nil, let c = EpubLibrary.first(#"<meta[^>]*name="cover"[^>]*content="([^"]+)""#, opf) ?? EpubLibrary.first(#"<meta[^>]*content="([^"]+)"[^>]*name="cover""#, opf) {
+            href = items.first(where: { isImg($0) && (($0["href"] ?? "") == c || ($0["href"] ?? "").hasSuffix("/" + c)) })?["href"]
+            if href == nil, c.range(of: #"\.(jpe?g|png|gif|webp)$"#, options: [.regularExpression, .caseInsensitive]) != nil,
+               EpubLibrary.member(u, EpubLibrary.join(base, c)) != nil { href = c }
+        }
+        // the picture on the cover page: the <guide> cover reference, a page called cover, else the book's first page
+        func pageImage(_ page: String) -> Data? {
+            guard let pd = EpubLibrary.member(u, page) else { return nil }
+            let t = EpubLibrary.text(pd)
+            guard let src = EpubLibrary.first(#"<img[^>]+src\s*=\s*["']([^"']+)["']"#, t) ?? EpubLibrary.first(#"<image[^>]+href\s*=\s*["']([^"']+)["']"#, t) else { return nil }
+            let dir = (page as NSString).deletingLastPathComponent
+            return EpubLibrary.member(u, EpubLibrary.join(dir, src.removingPercentEncoding ?? src))
+        }
+        if href == nil, let g = EpubLibrary.first(##"<reference[^>]*type="cover"[^>]*href="([^"#]+)"##, opf) ?? EpubLibrary.first(##"<reference[^>]*href="([^"#]+)[^"]*"[^>]*type="cover""##, opf),
+           let d = pageImage(EpubLibrary.join(base, g)) { return d }
         if href == nil { href = items.first(where: { isImg($0) && (($0["id"] ?? "") + ($0["href"] ?? "")).lowercased().contains("cover") })?["href"] }
+        if href == nil {
+            if let cp = items.first(where: { ($0["media-type"] ?? "").contains("html") && ($0["href"] ?? "").lowercased().contains("cover") })?["href"],
+               let d = pageImage(EpubLibrary.join(base, cp)) { return d }
+            if let first = EpubLibrary.first(#"<itemref[^>]*idref="([^"]+)""#, opf), let fh = items.first(where: { $0["id"] == first })?["href"],
+               let d = pageImage(EpubLibrary.join(base, fh)) { return d }
+        }
         guard let h = href else { return nil }
         return EpubLibrary.member(u, EpubLibrary.join(base, h))
     }

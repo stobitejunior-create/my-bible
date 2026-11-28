@@ -268,8 +268,9 @@ function libCatHTML(){
 let COVQ=[], COVN=0, COVIO=null;
 function libCovers(){
   if(COVIO) COVIO.disconnect();
-  COVIO=new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; COVIO.unobserve(e.target); COVQ.push(e.target); covPump(); }),{root:rq('#lib .lbbody'),rootMargin:'400px'});
-  document.querySelectorAll('#lib img[data-key]').forEach(i=>COVIO.observe(i));
+  // watch the tile, not the picture: the picture is hidden until it loads, and a hidden element never counts as on screen
+  COVIO=new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; COVIO.unobserve(e.target); const i=e.target.querySelector('img[data-key]'); if(i){ COVQ.push(i); covPump(); } }),{root:rq('#lib .lbbody'),rootMargin:'400px'});
+  document.querySelectorAll('#lib img[data-key]').forEach(i=>COVIO.observe(i.parentNode));
 }
 const COVCACHE={};
 async function covLocal(id){
